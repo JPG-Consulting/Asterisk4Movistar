@@ -296,7 +296,7 @@ do_chan_dongle() {
 
     if [ -z "$DONGLE_EMAIL_ADDRESS" ]; then
         echo "exten => sms,n,Set(FILE($DONGLE_SMS_FILE,,,a)=\${STRFTIME(\${EPOCH},,%Y-%m-%d %H:%M:%S)} - \${DONGLENAME} - \${CALLERID(num)}: \${BASE64_DECODE(\${SMS_BASE64})})" >> /etc/asterisk/extensions.conf
-        echo "exten => sms,n,System(echo >> $DONGLE_SMS_FILE)" >> /etc/asterisk/extensions.conf
+        echo "exten => sms,n,System(echo >> /var/log/asterisk/sms.log)" >> /etc/asterisk/extensions.conf
     else
         echo "exten => sms,n,System(echo \"To: $DONGLE_EMAIL_ADDRESS\nSubject: Incoming SMS from \${CALLERID(num)}\n\n\${STRFTIME(\${EPOCH},,%Y-%m-%d %H:%M:%S)} - \${DONGLENAME} - \${CALLERID(num)}: \" > /tmp/sms.txt)" >> /etc/asterisk/extensions.conf
         echo "exten => sms,n,Set(FILE(/tmp/sms.txt,,,a)=\${BASE64_DECODE(\${SMS_BASE64})})" >> /etc/asterisk/extensions.conf
@@ -330,16 +330,16 @@ do_chan_dongle() {
     fi
     
     # All other incoming calls
-    echo "exten => _.,2,Set(CALLERID(name)=\${CALLERID(num)})" >> /etc/asterisk/extensions.conf
-    echo "exten => _.,3,Dial(${sip_extensions})" >> /etc/asterisk/extensions.conf
+    echo "exten => _.,10,Set(CALLERID(name)=\${CALLERID(num)})" >> /etc/asterisk/extensions.conf
+    echo "exten => _.,11,Dial(${sip_extensions})" >> /etc/asterisk/extensions.conf
     
     if [ -n $DONGLE_DISA_PHONENUMBER ]; then
         echo "exten => _.,499,Hangup()" >> /etc/asterisk/extensions.conf
         if [ -n $DONGLE_DISA_PIN ]; then
             echo "exten => _.,500,Authenticate(${DONGLE_DISA_PIN})" >> /etc/asterisk/extensions.conf
-            echo "exten => _.,501,DISA(no-password)" >> /etc/asterisk/extensions.conf
+            echo "exten => _.,501,DISA(no-password, public)" >> /etc/asterisk/extensions.conf
         else
-            echo "exten => _.,500,DISA(no-password)" >> /etc/asterisk/extensions.conf
+            echo "exten => _.,500,DISA(no-password, public)" >> /etc/asterisk/extensions.conf
         fi
     fi
 }
