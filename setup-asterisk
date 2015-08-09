@@ -110,7 +110,7 @@ do_finish() {
     fi
 
     if [ $ASK_TO_REBOOT -eq 1 ]; then
-        whiptail --yesno "¿Desea reiniciar ahora?" 20 60 2
+        whiptail --yesno "Â¿Desea reiniciar ahora?" 20 60 2
         if [ $? -eq 0 ]; then # yes
             sync
             reboot
@@ -142,14 +142,14 @@ do_set_userbase()
     local userbase=${ASTERISK_USERS_CONF_USERBASE}
     
     while true; do
-        userbaser=$(whiptail --inputbox "Introduzca la primera extensión para los usuarios" 20 60 "${ASTERISK_USERS_CONF_USERBASE}" 3>&1 1>&2 2>&3)
+        userbaser=$(whiptail --inputbox "Introduzca la primera extensiÃ³n para los usuarios" 20 60 "${ASTERISK_USERS_CONF_USERBASE}" 3>&1 1>&2 2>&3)
         if [ $? -eq 0 ]; then
             if [[ $userbase =~ ^-?[0-9]+$ ]]; then
                 ASTERISK_USERS_CONF_USERBASE=${userbase}
                 CURRENT_EXTENSION_NUM=${userbase}
                 return 0
             else
-                whiptail --msgbox "La extensión debe ser un valor numérico." 20 60 1
+                whiptail --msgbox "La extensiÃ³n debe ser un valor numÃ©rico." 20 60 1
             fi
         else
             return 1
@@ -163,14 +163,14 @@ do_add_user() {
     local extension_password=''
     local extension_cid_number=''
 
-    # 1001 está reservado para el cliente del Comtrend VG-8050 via LAN
+    # 1001 estÃ¡ reservado para el cliente del Comtrend VG-8050 via LAN
     if [ $CURRENT_EXTENSION_NUM -eq 1001 ]; then
         ((CURRENT_EXTENSION_NUM=CURRENT_EXTENSION_NUM+1))
     fi
 
     extension_cid_number=${CURRENT_EXTENSION_NUM}
 
-    extension_password=$(whiptail --passwordbox "Introduzca la contraseña del usuario" 20 60 "" 3>&1 1>&2 2>&3)
+    extension_password=$(whiptail --passwordbox "Introduzca la contraseÃ±a del usuario" 20 60 "" 3>&1 1>&2 2>&3)
     if [ $? -ne 0 ]; then
         return 1
     fi
@@ -180,7 +180,7 @@ do_add_user() {
         extension_fullname=''
     fi
     
-    extension_email=$(whiptail --inputbox "Introduzca el correo electrónico del usuario" 20 60 "" 3>&1 1>&2 2>&3)
+    extension_email=$(whiptail --inputbox "Introduzca el correo electrÃ³nico del usuario" 20 60 "" 3>&1 1>&2 2>&3)
     if [ $? -ne 0 ]; then
         extension_email=''
     fi
@@ -204,7 +204,7 @@ do_add_user() {
 do_movistar_ftth() {
     local sip_extensions=$( IFS=$'&'; echo "${CONFIGURED_EXTENSIONS[*]}" )
     
-    PHONENUMBER=$(whiptail --inputbox "Introduzca su número de teléfono" 20 60 "$CURRENT_HOSTNAME" 3>&1 1>&2 2>&3)
+    PHONENUMBER=$(whiptail --inputbox "Introduzca su nÃºmero de telÃ©fono" 20 60 "$CURRENT_HOSTNAME" 3>&1 1>&2 2>&3)
     if [ $? -ne 0 ]; then
         return 1
     fi
@@ -280,7 +280,7 @@ do_movistar_ftth() {
 do_chan_dongle() {
     local sip_extensions=$( IFS=$'&'; echo "${CONFIGURED_EXTENSIONS[*]}" )
     
-    MOBILE_PHONENUMBER=$(whiptail --inputbox "Introduzca el número de teléfono móvil del pincho" 20 60 "$CURRENT_HOSTNAME" 3>&1 1>&2 2>&3)
+    MOBILE_PHONENUMBER=$(whiptail --inputbox "Introduzca el nÃºmero de telÃ©fono mÃ³vil del pincho" 20 60 "$CURRENT_HOSTNAME" 3>&1 1>&2 2>&3)
     if [ $? -ne 0 ]; then
         return 1
     fi
@@ -310,9 +310,9 @@ do_chan_dongle() {
     echo "exten => sms,n,Hangup()" >> /etc/asterisk/extensions.conf
 
     # DISA
-    whiptail --yesno "�Desea habilitar DISA en el canal GSM?" 20 60 2 --yes-button Si --no-button No
+    whiptail --yesno "¿Desea habilitar DISA en el canal GSM?" 20 60 2 --yes-button Si --no-button No
     if [ $? -eq 0 ]; then
-        DONGLE_DISA_PHONENUMBER=$(whiptail --inputbox "Introduzca el número de teléfono desde el que accederá a DISA" 20 60 "$CURRENT_HOSTNAME" 3>&1 1>&2 2>&3)
+        DONGLE_DISA_PHONENUMBER=$(whiptail --inputbox "Introduzca el nÃºmero de telÃ©fono desde el que accederÃ¡ a DISA" 20 60 "$CURRENT_HOSTNAME" 3>&1 1>&2 2>&3)
         if [ $? -ne 0 ]; then
             DONGLE_DISA_PHONENUMBER=''
         fi
@@ -323,17 +323,25 @@ do_chan_dongle() {
                 DONGLE_DISA_PIN=''
             fi
             
-            echo "exten => ${DONGLE_DISA_PHONENUMBER},1,Answer()" >> /etc/asterisk/extensions.conf
-            echo "exten => ${DONGLE_DISA_PHONENUMBER},n,DISA(${DONGLE_DISA_PIN})" >> /etc/asterisk/extensions.conf
+            echo "exten => _.,1,GotoIf(\$[\"\${CALLERID(num)}\" = \"${DONGLE_DISA_PHONENUMBER}\"]?500)" >> /etc/asterisk/extensions.conf
         else
             whiptail --msgbox "DISA no ha sido activado." 20 60 1
         fi
     fi
     
     # All other incoming calls
-    echo "exten => _X.,1,Set(CALLERID(name)=\${CALLERID(num)})" >> /etc/asterisk/extensions.conf
-    #echo "exten => _X.,1,GoTo(from-trunk,\${EXTEN},1)" >> /etc/asterisk/extensions.conf
-    echo "exten => _X.,n,Dial(${sip_extensions})" >> /etc/asterisk/extensions.conf
+    echo "exten => _.,2,Set(CALLERID(name)=\${CALLERID(num)})" >> /etc/asterisk/extensions.conf
+    echo "exten => _.,3,Dial(${sip_extensions})" >> /etc/asterisk/extensions.conf
+    
+    if [ -n $DONGLE_DISA_PHONENUMBER ]; then
+        echo "exten => _.,499,Hangup()" >> /etc/asterisk/extensions.conf
+        if [ -n $DONGLE_DISA_PIN ]; then
+            echo "exten => _.,500,Authenticate(${DONGLE_DISA_PIN})" >> /etc/asterisk/extensions.conf
+            echo "exten => _.,501,DISA(no-password)" >> /etc/asterisk/extensions.conf
+        else
+            echo "exten => _.,500,DISA(no-password)" >> /etc/asterisk/extensions.conf
+        fi
+    fi
 }
 
 if [ $(id -u) -ne 0 ]; then
@@ -350,7 +358,7 @@ do_set_userbase
 while true; do
     do_add_user
 
-    whiptail --yesno "�Desea agregar otro usuario?" 20 60 2 --yes-button Si --no-button No
+    whiptail --yesno "¿Desea agregar otro usuario?" 20 60 2 --yes-button Si --no-button No
     if [ $? -eq 1 ]; then
         break
     fi
@@ -358,7 +366,7 @@ done
 
 do_movistar_ftth
 
-whiptail --yesno "�Desea activar chan_dongle?" 20 60 2 --yes-button Si --no-button No
+whiptail --yesno "¿Desea activar chan_dongle?" 20 60 2 --yes-button Si --no-button No
 if [ $? -eq 0 ]; then
     do_chan_dongle
 fi
