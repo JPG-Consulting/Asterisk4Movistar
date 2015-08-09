@@ -143,14 +143,14 @@ do_set_userbase()
     local userbase=${ASTERISK_USERS_CONF_USERBASE}
     
     while true; do
-        userbaser=$(whiptail --inputbox "Introduzca la primera extensiÃ³n para los usuarios" 20 60 "${ASTERISK_USERS_CONF_USERBASE}" 3>&1 1>&2 2>&3)
+        userbaser=$(whiptail --inputbox "Introduzca la primera extensión para los usuarios" 20 60 "${ASTERISK_USERS_CONF_USERBASE}" 3>&1 1>&2 2>&3)
         if [ $? -eq 0 ]; then
             if [[ $userbase =~ ^-?[0-9]+$ ]]; then
                 ASTERISK_USERS_CONF_USERBASE=${userbase}
                 CURRENT_EXTENSION_NUM=${userbase}
                 return 0
             else
-                whiptail --msgbox "La extensiÃ³n debe ser un valor numÃ©rico." 20 60 1
+                whiptail --msgbox "La extensión debe ser un valor numérico." 20 60 1
             fi
         else
             return 1
@@ -171,7 +171,7 @@ do_add_user() {
 
     extension_cid_number=${CURRENT_EXTENSION_NUM}
 
-    extension_password=$(whiptail --passwordbox "Introduzca la contraseÃ±a del usuario" 20 60 "" 3>&1 1>&2 2>&3)
+    extension_password=$(whiptail --passwordbox "Introduzca la contraseña del usuario" 20 60 "" 3>&1 1>&2 2>&3)
     if [ $? -ne 0 ]; then
         return 1
     fi
@@ -181,7 +181,7 @@ do_add_user() {
         extension_fullname=''
     fi
     
-    extension_email=$(whiptail --inputbox "Introduzca el correo electrÃ³nico del usuario" 20 60 "" 3>&1 1>&2 2>&3)
+    extension_email=$(whiptail --inputbox "Introduzca el correo electrónico del usuario" 20 60 "" 3>&1 1>&2 2>&3)
     if [ $? -ne 0 ]; then
         extension_email=''
     fi
@@ -205,7 +205,7 @@ do_add_user() {
 do_movistar_ftth() {
     local sip_extensions=$( IFS=$'&'; echo "${CONFIGURED_EXTENSIONS[*]}" )
     
-    PHONENUMBER=$(whiptail --inputbox "Introduzca su nÃºmero de telÃ©fono" 20 60 "$CURRENT_HOSTNAME" 3>&1 1>&2 2>&3)
+    PHONENUMBER=$(whiptail --inputbox "Introduzca su número de teléfono fijo" 20 60 "$CURRENT_HOSTNAME" 3>&1 1>&2 2>&3)
     if [ $? -ne 0 ]; then
         return 1
     fi
@@ -281,7 +281,7 @@ do_movistar_ftth() {
 do_chan_dongle() {
     local sip_extensions=$( IFS=$'&'; echo "${CONFIGURED_EXTENSIONS[*]}" )
     
-    MOBILE_PHONENUMBER=$(whiptail --inputbox "Introduzca el nÃºmero de telÃ©fono mÃ³vil del pincho" 20 60 "$CURRENT_HOSTNAME" 3>&1 1>&2 2>&3)
+    MOBILE_PHONENUMBER=$(whiptail --inputbox "Introduzca el número de teléfono móvil del pincho" 20 60 "$CURRENT_HOSTNAME" 3>&1 1>&2 2>&3)
     if [ $? -ne 0 ]; then
         return 1
     fi
@@ -297,7 +297,7 @@ do_chan_dongle() {
     echo "exten => sms,1,Verbose(Incoming SMS from \${CALLERID(num)} \${BASE64_DECODE(\${SMS_BASE64})})" >> /etc/asterisk/extensions.conf
 
     if [ -z "$DONGLE_EMAIL_ADDRESS" ]; then
-        echo "exten => sms,n,Set(FILE($DONGLE_SMS_FILE,,,a)=\${STRFTIME(\${EPOCH},,%Y-%m-%d %H:%M:%S)} - \${DONGLENAME} - \${CALLERID(num)}: \${BASE64_DECODE(\${SMS_BASE64})})" >> /etc/asterisk/extensions.conf
+        echo "exten => sms,n,Set(FILE(/var/log/asterisk/sms.log,,,a)=\${STRFTIME(\${EPOCH},,%Y-%m-%d %H:%M:%S)} - \${DONGLENAME} - \${CALLERID(num)}: \${BASE64_DECODE(\${SMS_BASE64})})" >> /etc/asterisk/extensions.conf
         echo "exten => sms,n,System(echo >> /var/log/asterisk/sms.log)" >> /etc/asterisk/extensions.conf
     else
         echo "exten => sms,n,System(echo \"To: $DONGLE_EMAIL_ADDRESS\nSubject: Incoming SMS from \${CALLERID(num)}\n\n\${STRFTIME(\${EPOCH},,%Y-%m-%d %H:%M:%S)} - \${DONGLENAME} - \${CALLERID(num)}: \" > /tmp/sms.txt)" >> /etc/asterisk/extensions.conf
