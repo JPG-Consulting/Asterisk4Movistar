@@ -298,12 +298,13 @@ function do_backup()
           --exclude '/sys' \
           --exclude '/tmp' \
           --exclude 'lost\+found' \
-		  --exclude '/var/tmp' \
-		  --exclude '/var/lib/dhcp' \
-		  --exclude '/var/lib/dhcpcd5' \
+          --exclude '/var/tmp' \
+          --exclude '/var/lib/dhcp' \
+          --exclude '/var/lib/dhcpcd5' \
           --exclude '/etc/udev/rules.d/70-persistent-net.rules' \
           --exclude "${MOUNT_PATH}" \
           --exclude "${IMAGE_FILE}" \
+          --exclude "/root/build-image"
           / ${MOUNT_PATH}/
     if [ $? -ne 0 ]; then
         echo "Error running backup"
