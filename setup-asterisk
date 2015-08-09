@@ -88,6 +88,7 @@ case "$1" in
         resize2fs /dev/root &&
         rm /etc/init.d/resize2fs_once &&
         update-rc.d resize2fs_once remove &&
+        service asterisk restart &&
         log_end_msg $?
         ;;
     *)
