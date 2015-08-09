@@ -111,7 +111,7 @@ do_finish() {
     fi
 
     if [ $ASK_TO_REBOOT -eq 1 ]; then
-        whiptail --yesno "Â¿Desea reiniciar ahora?" 20 60 2
+        whiptail --yesno "¿Desea reiniciar ahora?" 20 60 2
         if [ $? -eq 0 ]; then # yes
             sync
             reboot
@@ -314,7 +314,7 @@ do_chan_dongle() {
     # DISA
     whiptail --yesno "¿Desea habilitar DISA en el canal GSM?" 20 60 2 --yes-button Si --no-button No
     if [ $? -eq 0 ]; then
-        DONGLE_DISA_PHONENUMBER=$(whiptail --inputbox "Introduzca el nÃºmero de telÃ©fono desde el que accederÃ¡ a DISA" 20 60 "$CURRENT_HOSTNAME" 3>&1 1>&2 2>&3)
+        DONGLE_DISA_PHONENUMBER=$(whiptail --inputbox "Introduzca el número de teléfono desde el que accederá a DISA" 20 60 "$CURRENT_HOSTNAME" 3>&1 1>&2 2>&3)
         if [ $? -ne 0 ]; then
             DONGLE_DISA_PHONENUMBER=''
         fi
