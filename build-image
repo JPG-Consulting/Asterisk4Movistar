@@ -339,10 +339,10 @@ function do_asterisk_setup() {
     [ -f /tmp/extensions.conf ] && rm /tmp/extensions.conf
     [ -f /tmp/sip.conf ] && rm /tmp/sip.conf
 
-	wget https://raw.githubusercontent.com/JPG-Consulting/RPiAsterisk4Movistar/development/configs/asterisk.conf -O /tmp/asterisk.conf
-    wget https://raw.githubusercontent.com/JPG-Consulting/RPiAsterisk4Movistar/development/configs/dongle.conf -O /tmp/dongle.conf
-    wget https://raw.githubusercontent.com/JPG-Consulting/RPiAsterisk4Movistar/development/configs/extensions.conf -O /tmp/extensions.conf
-	wget https://raw.githubusercontent.com/JPG-Consulting/RPiAsterisk4Movistar/development/configs/sip.conf -O /tmp/sip.conf
+    wget https://raw.githubusercontent.com/JPG-Consulting/RPiAsterisk4Movistar/develop/configs/asterisk.conf -O /tmp/asterisk.conf
+    wget https://raw.githubusercontent.com/JPG-Consulting/RPiAsterisk4Movistar/develop/configs/dongle.conf -O /tmp/dongle.conf
+    wget https://raw.githubusercontent.com/JPG-Consulting/RPiAsterisk4Movistar/develop/configs/extensions.conf -O /tmp/extensions.conf
+    wget https://raw.githubusercontent.com/JPG-Consulting/RPiAsterisk4Movistar/develop/configs/sip.conf -O /tmp/sip.conf
 
     cp /tmp/asterisk.conf ${MOUNT_PATH}/etc/asterisk/asterisk.conf
     cp /tmp/dongle.conf ${MOUNT_PATH}/etc/asterisk/dongle.conf
@@ -351,19 +351,19 @@ function do_asterisk_setup() {
 
 	# Update the backup script
 	[ -f /tmp/raspi-backup ] && rm /tmp/raspi-backup
-    wget https://raw.githubusercontent.com/JPG-Consulting/RPiAsterisk4Movistar/development/raspi-backup -O /tmp/raspi-backup
+    wget https://raw.githubusercontent.com/JPG-Consulting/RPiAsterisk4Movistar/develop/raspi-backup -O /tmp/raspi-backup
 	cp /tmp/raspi-backup ${MOUNT_PATH}/usr/bin/raspi-backup
     chmod +x ${MOUNT_PATH}/usr/bin/raspi-backup
 
     # Download the setup script
 	[ -f /tmp/setup-asterisk ] && rm /tmp/setup-asterisk
-	wget https://raw.githubusercontent.com/JPG-Consulting/RPiAsterisk4Movistar/development/setup-asterisk -O /tmp/setup-asterisk
+	wget https://raw.githubusercontent.com/JPG-Consulting/RPiAsterisk4Movistar/develop/setup-asterisk -O /tmp/setup-asterisk
 	cp /tmp/setup-asterisk ${MOUNT_PATH}/usr/bin/setup-asterisk
 	chmod +x ${MOUNT_PATH}/usr/bin/setup-asterisk
 
     # Run at startup
 	[ -f /tmp/setup-asterisk.sh ] && rm /tmp/setup-asterisk.sh
-	wget https://raw.githubusercontent.com/JPG-Consulting/RPiAsterisk4Movistar/development/setup-asterisk.sh -O /tmp/setup-asterisk.sh
+	wget https://raw.githubusercontent.com/JPG-Consulting/RPiAsterisk4Movistar/develop/setup-asterisk.sh -O /tmp/setup-asterisk.sh
 	cp /tmp/setup-asterisk.sh ${MOUNT_PATH}/etc/profile.d/setup-asterisk.sh
 	chmod +x ${MOUNT_PATH}/etc/profile.d/setup-asterisk.sh
 
