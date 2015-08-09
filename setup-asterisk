@@ -286,6 +286,7 @@ do_chan_dongle() {
         return 1
     fi
 
+    sed -e "s|^noload => chan_dongle.so|load => chan_dongle.so|" -i /etc/asterisk/modules.conf
     sed -e "s|^exten=+1234567890|exten=${MOBILE_PHONENUMBER}|" -i /etc/asterisk/dongle.conf
     sed -e "s|^context=default|context=from-dongle|" -i /etc/asterisk/dongle.conf
 
