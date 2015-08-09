@@ -374,6 +374,10 @@ function do_asterisk_setup() {
 
     # Remove raspi-conf startup script if present
     [ -f ${MOUNT_PATH}/etc/profile.d/raspi-config.sh ] && rm ${MOUNT_PATH}/etc/profile.d/raspi-config.sh
+    
+    # Remove Asterisk CLI history
+    [ -f ${MOUNT_PATH}/home/pi/.asterisk_history ] && rm ${MOUNT_PATH}/home/pi/.asterisk_history
+    [ -f ${MOUNT_PATH}/root/.asterisk_history ] && rm ${MOUNT_PATH}/root/.asterisk_history
 
     unmount_image
     delete_lo
