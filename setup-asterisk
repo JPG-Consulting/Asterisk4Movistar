@@ -124,9 +124,9 @@ do_backups() {
     [ ! -f /etc/asterisk/sip.conf.orig ] && cp /etc/asterisk/sip.conf /etc/asterisk/sip.conf.orig
     [ ! -f /etc/asterisk/extensions.conf.orig ] && cp /etc/asterisk/extensions.conf /etc/asterisk/extensions.conf.orig
     [ ! -f /etc/asterisk/users.conf.orig ] && cp /etc/asterisk/users.conf /etc/asterisk/users.conf.orig
-    
+
     [ ! -d /tmp/asterisk ] && mkdir -p /tmp/asterisk
-    
+
     cp /etc/asterisk/sip.conf /tmp/asterisk/sip.conf
     cp /etc/asterisk/extensions.conf /tmp/asterisk/extensions.conf
     cp /etc/asterisk/users.conf /temp/asterisk/users.conf
@@ -141,7 +141,7 @@ do_restore_backups() {
 do_set_userbase()
 {
     local userbase=${ASTERISK_USERS_CONF_USERBASE}
-    
+
     while true; do
         userbaser=$(whiptail --inputbox "Introduzca la primera extensión para los usuarios" 20 60 "${ASTERISK_USERS_CONF_USERBASE}" 3>&1 1>&2 2>&3)
         if [ $? -eq 0 ]; then
@@ -210,6 +210,11 @@ do_movistar_ftth() {
         return 1
     fi
     
+    whiptail --yesno "¿Desea establecer un PIN para las llamadas de tarificación adicional?" 20 60 2
+    if [ $? -eq 0 ]; then # yes
+        PIN_TARIFICACION_ADICIONAL=$(whiptail --passwordbox "Introduzca la contraseña del usuario" 20 60 "" 3>&1 1>&2 2>&3)
+    fi
+    
     # Configuracion para Movistar por SIP
     echo "" >> /etc/asterisk/sip.conf
     echo "[Movistar](!)" >> /etc/asterisk/sip.conf
@@ -267,9 +272,16 @@ do_movistar_ftth() {
 
     echo "" >> /etc/asterisk/extensions.conf
     echo "[numeros-inteligente-tarificacion-adicional]" >> /etc/asterisk/extensions.conf
-    echo "exten => _80[367]XXXXXX,1,Dial(SIP/MovistarOut/\${EXTEN})" >> /etc/asterisk/extensions.conf
-    echo "exten => _90[57]XXXXXX,1,Dial(SIP/MovistarOut/\${EXTEN})" >> /etc/asterisk/extensions.conf
-
+    if [ -n "$PIN_TARIFICACION_ADICIONAL" ]; then
+        echo "exten => _80[367]XXXXXX,1,Authenticate(${PIN_TARIFICACION_ADICIONAL})" >> /etc/asterisk/extensions.conf
+        echo "exten => _80[367]XXXXXX,2,Dial(SIP/MovistarOut/\${EXTEN})" >> /etc/asterisk/extensions.conf
+        echo "exten => _90[57]XXXXXX,1,Authenticate(${PIN_TARIFICACION_ADICIONAL})" >> /etc/asterisk/extensions.conf
+        echo "exten => _90[57]XXXXXX,2,Dial(SIP/MovistarOut/\${EXTEN})" >> /etc/asterisk/extensions.conf
+    else
+        echo "exten => _80[367]XXXXXX,1,Dial(SIP/MovistarOut/\${EXTEN})" >> /etc/asterisk/extensions.conf
+        echo "exten => _90[57]XXXXXX,1,Dial(SIP/MovistarOut/\${EXTEN})" >> /etc/asterisk/extensions.conf
+    fi
+    
     echo "" >> /etc/asterisk/extensions.conf
     echo "[numeros-inteligente-personales]" >> /etc/asterisk/extensions.conf
     echo "exten => _70XXXXXXX,1,Dial(SIP/MovistarOut/\${EXTEN})" >> /etc/asterisk/extensions.conf
