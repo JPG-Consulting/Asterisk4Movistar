@@ -337,11 +337,14 @@ do_chan_dongle() {
     
     if [ -n $DONGLE_DISA_PHONENUMBER ]; then
         echo "exten => _.,499,Hangup()" >> /etc/asterisk/extensions.conf
+        echo "exten => _.,500,Answer()" >> /etc/asterisk/extensions.conf
         if [ -n $DONGLE_DISA_PIN ]; then
-            echo "exten => _.,500,Authenticate(${DONGLE_DISA_PIN})" >> /etc/asterisk/extensions.conf
-            echo "exten => _.,501,DISA(no-password, public)" >> /etc/asterisk/extensions.conf
+            echo "exten => _.,501,Authenticate(${DONGLE_DISA_PIN})" >> /etc/asterisk/extensions.conf
+            echo "exten => _.,502,Background(vm-enter-num-to-call)" >> /etc/asterisk/extensions.conf
+            echo "exten => _.,503,DISA(no-password, public)" >> /etc/asterisk/extensions.conf
         else
-            echo "exten => _.,500,DISA(no-password, public)" >> /etc/asterisk/extensions.conf
+            echo "exten => _.,501,Background(vm-enter-num-to-call)" >> /etc/asterisk/extensions.conf
+            echo "exten => _.,502,DISA(no-password, public)" >> /etc/asterisk/extensions.conf
         fi
     fi
 }
