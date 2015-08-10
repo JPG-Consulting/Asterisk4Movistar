@@ -248,97 +248,119 @@ do_movistar_ftth() {
     
     sed -e "s|^;register => 2345:password@sip_proxy/1234|;register => 2345:password@sip_proxy/1234\nregister => ${PHONENUMBER}@telefonica.net:${PHONENUMBER}@10.31.255.134:5070|" -i /etc/asterisk/sip.conf
 
-[nacionales]
-exten => _[89]ZXXXXXXX,1,Dial(SIP/MovistarOut/\${EXTEN})
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[nacionales]" >> /etc/asterisk/extensions.conf
+    echo "exten => _[89]ZXXXXXXX,1,Dial(SIP/MovistarOut/\${EXTEN})" >> /etc/asterisk/extensions.conf
 
-[moviles]
-exten => _6XXXXXXXX,1,Dial(SIP/MovistarOut/\${EXTEN})
-exten => _7[1234]XXXXXXX,1,Dial(SIP/MovistarOut/\${EXTEN})
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[moviles]" >> /etc/asterisk/extensions.conf
+    echo "exten => _6XXXXXXXX,1,Dial(SIP/MovistarOut/\${EXTEN})" >> /etc/asterisk/extensions.conf
+    echo "exten => _7[1234]XXXXXXX,1,Dial(SIP/MovistarOut/\${EXTEN})" >> /etc/asterisk/extensions.conf
 
-[numeros-inteligente-gratuitos]
-exten => _[89]00XXXXXX,1,Dial(SIP/MovistarOut/\${EXTEN})
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[numeros-inteligente-gratuitos]" >> /etc/asterisk/extensions.conf
+    echo "exten => _[89]00XXXXXX,1,Dial(SIP/MovistarOut/\${EXTEN})" >> /etc/asterisk/extensions.conf
 
-[numeros-inteligente-precio-ordinario]
-exten => _90[12]XXXXXX,1,Dial(SIP/MovistarOut/\${EXTEN})
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[numeros-inteligente-precio-ordinario]" >> /etc/asterisk/extensions.conf
+    echo "exten => _90[12]XXXXXX,1,Dial(SIP/MovistarOut/\${EXTEN})" >> /etc/asterisk/extensions.conf
 
-[numeros-inteligente-tarificacion-adicional]
-exten => _80[367]XXXXXX,1,Dial(SIP/MovistarOut/\${EXTEN})
-exten => _90[57]XXXXXX,1,Dial(SIP/MovistarOut/\${EXTEN})
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[numeros-inteligente-tarificacion-adicional]" >> /etc/asterisk/extensions.conf
+    echo "exten => _80[367]XXXXXX,1,Dial(SIP/MovistarOut/\${EXTEN})" >> /etc/asterisk/extensions.conf
+    echo "exten => _90[57]XXXXXX,1,Dial(SIP/MovistarOut/\${EXTEN})" >> /etc/asterisk/extensions.conf
 
-[numeros-inteligente-personales]
-exten => _70XXXXXXX,1,Dial(SIP/MovistarOut/\${EXTEN})
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[numeros-inteligente-personales]" >> /etc/asterisk/extensions.conf
+    echo "exten => _70XXXXXXX,1,Dial(SIP/MovistarOut/\${EXTEN})" >> /etc/asterisk/extensions.conf
 
-[numeros-inteligentes]
-include => numeros-inteligente-gratuitos
-include => numeros-inteligente-precio-ordinario
-include => numeros-inteligente-tarificacion-adicional
-include => numeros-inteligente-personales
-exten => _[89]0XXXXXXX,1,Dial(SIP/MovistarOut/\${EXTEN})
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[numeros-inteligentes]" >> /etc/asterisk/extensions.conf
+    echo "include => numeros-inteligente-gratuitos" >> /etc/asterisk/extensions.conf
+    echo "include => numeros-inteligente-precio-ordinario" >> /etc/asterisk/extensions.conf
+    echo "include => numeros-inteligente-tarificacion-adicional" >> /etc/asterisk/extensions.conf
+    echo "include => numeros-inteligente-personales" >> /etc/asterisk/extensions.conf
+    echo "; Fallback" >> /etc/asterisk/extensions.conf
+    echo ";exten => _[89]0XXXXXXX,1,Dial(SIP/MovistarOut/\${EXTEN})" >> /etc/asterisk/extensions.conf
 
-[emergencias]
-exten => 112,1,Dial(SIP/MovistarOut/\${EXTEN})
-exten => 061,1,Dial(SIP/MovistarOut/\${EXTEN})
-exten => 062,1,Dial(SIP/MovistarOut/\${EXTEN})
-exten => 080,1,Dial(SIP/MovistarOut/\${EXTEN})
-exten => 088,1,Dial(SIP/MovistarOut/\${EXTEN})
-exten => 085,1,Dial(SIP/MovistarOut/\${EXTEN})
-exten => 091,1,Dial(SIP/MovistarOut/\${EXTEN})
-exten => 092,1,Dial(SIP/MovistarOut/\${EXTEN})
-exten => 1006,1,Dial(SIP/MovistarOut/\${EXTEN})
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[emergencias]" >> /etc/asterisk/extensions.conf
+    echo "exten => 112,1,Dial(SIP/MovistarOut/112)" >> /etc/asterisk/extensions.conf
+    echo "exten => 061,1,Dial(SIP/MovistarOut/061)" >> /etc/asterisk/extensions.conf
+    echo "exten => 062,1,Dial(SIP/MovistarOut/062)" >> /etc/asterisk/extensions.conf
+    echo "exten => 080,1,Dial(SIP/MovistarOut/080)" >> /etc/asterisk/extensions.conf
+    echo "exten => 085,1,Dial(SIP/MovistarOut/085)" >> /etc/asterisk/extensions.conf
+    echo "exten => 088,1,Dial(SIP/MovistarOut/088)" >> /etc/asterisk/extensions.conf
+    echo "exten => 091,1,Dial(SIP/MovistarOut/091)" >> /etc/asterisk/extensions.conf
+    echo "exten => 092,1,Dial(SIP/MovistarOut/092)" >> /etc/asterisk/extensions.conf
+    echo "exten => 1006,1,Dial(SIP/MovistarOut/1006)" >> /etc/asterisk/extensions.conf
 
-[informacion-administrativa]
-exten => 010,1,Dial(SIP/MovistarOut/\${EXTEN})
-exten => 012,1,Dial(SIP/MovistarOut/\${EXTEN})
-exten => 060,1,Dial(SIP/MovistarOut/\${EXTEN})
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[informacion-administrativa]" >> /etc/asterisk/extensions.conf
+    echo "exten => 010,1,Dial(SIP/MovistarOut/010)" >> /etc/asterisk/extensions.conf
+    echo "exten => 012,1,Dial(SIP/MovistarOut/012)" >> /etc/asterisk/extensions.conf
+    echo "exten => 060,1,Dial(SIP/MovistarOut/060)" >> /etc/asterisk/extensions.conf
 
-[atencion-informacion-otros]
-exten => 011,1,Dial(SIP/MovistarOut/\${EXTEN})
-exten => 016,1,Dial(SIP/MovistarOut/\${EXTEN})
-exten => 116XXX,1,Dial(SIP/MovistarOut/\${EXTEN})
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[atencion-informacion-otros]" >> /etc/asterisk/extensions.conf
+    echo "exten => 011,1,Dial(SIP/MovistarOut/011)" >> /etc/asterisk/extensions.conf
+    echo "exten => 016,1,Dial(SIP/MovistarOut/016)" >> /etc/asterisk/extensions.conf
+    echo "exten => 116XXX,1,Dial(SIP/MovistarOut/\${EXTEN})" >> /etc/asterisk/extensions.conf
 
-[consultas]
-exten => _118XX,1,Dial(SIP/MovistarOut/\${EXTEN})
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[consultas]" >> /etc/asterisk/extensions.conf
+    echo "exten => _118XX,1,Dial(SIP/MovistarOut/\${EXTEN})" >> /etc/asterisk/extensions.conf
 
-[atencion-clientes]
-exten => _1[34567]XX,1,Dial(SIP/MovistarOut/\${EXTEN})
-exten => _[12]2XX,1,Dial(SIP/MovistarOut/\${EXTEN})
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[atencion-clientes]" >> /etc/asterisk/extensions.conf
+    echo "exten => _1[34567]XX,1,Dial(SIP/MovistarOut/\${EXTEN})" >> /etc/asterisk/extensions.conf
+    echo "exten => _[12]2XX,1,Dial(SIP/MovistarOut/\${EXTEN})" >> /etc/asterisk/extensions.conf
 
-[llamada-oculta]
-exten => 069,1,Dial(SIP/MovistarOut/\${EXTEN})
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[llamada-oculta]" >> /etc/asterisk/extensions.conf
+    echo "exten => 069,1,Dial(SIP/MovistarOut/069)" >> /etc/asterisk/extensions.conf
 
-;[seleccion-operador]
-; Códigos de selección de operador
+    echo "" >> /etc/asterisk/extensions.conf
+    echo ";[seleccion-operador]" >> /etc/asterisk/extensions.conf
+    echo "; Códigos de selección de operador" >> /etc/asterisk/extensions.conf
 
-[numeros-cortos]
-include => emergencias
-include => informacion-administrativa
-include => atencion-informacion-otros
-include => consultas
-include => atencion-clientes
-include => llamada-oculta
-;include => seleccion-operador
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[numeros-cortos]" >> /etc/asterisk/extensions.conf
+    echo "include => emergencias" >> /etc/asterisk/extensions.conf
+    echo "include => informacion-administrativa" >> /etc/asterisk/extensions.conf
+    echo "include => atencion-informacion-otros" >> /etc/asterisk/extensions.conf
+    echo "include => consultas" >> /etc/asterisk/extensions.conf
+    echo "include => atencion-clientes" >> /etc/asterisk/extensions.conf
+    echo "include => llamada-oculta" >> /etc/asterisk/extensions.conf
+    echo ";include => seleccion-operador" >> /etc/asterisk/extensions.conf
 
-[nomadas]
-exten => _51XXXXXXXXX,1,Dial(SIP/MovistarOut/\${EXTEN})
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[nomadas]" >> /etc/asterisk/extensions.conf
+    echo "exten => _51XXXXXXXXX,1,Dial(SIP/MovistarOut/\${EXTEN})" >> /etc/asterisk/extensions.conf
 
-[internacionales]
-exten => _00XXXXXX.,1,Dial(SIP/MovistarOut/\${EXTEN})
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[internacionales]" >> /etc/asterisk/extensions.conf
+    echo "exten => _00XXXXXX.,1,Dial(SIP/MovistarOut/\${EXTEN})" >> /etc/asterisk/extensions.conf
 
-[salientes]
-include => nacionales
-include => moviles
-include => numeros-inteligentes
-include => numeros-cortos
-include => nomadas
-include => internacionales
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[salientes]" >> /etc/asterisk/extensions.conf
+    echo "include => nacionales" >> /etc/asterisk/extensions.conf
+    echo "include => moviles" >> /etc/asterisk/extensions.conf
+    echo "include => numeros-inteligentes" >> /etc/asterisk/extensions.conf
+    echo "include => numeros-cortos" >> /etc/asterisk/extensions.conf
+    echo "include => nomadas" >> /etc/asterisk/extensions.conf
+    echo "include => internacionales" >> /etc/asterisk/extensions.conf
 
     echo "" >> /etc/asterisk/extensions.conf
     echo "[outbound-movistar]" >> /etc/asterisk/extensions.conf
     echo "include => nacionales" >> /etc/asterisk/extensions.conf
-    echo "include => " >> /etc/asterisk/extensions.conf
-    echo "include => " >> /etc/asterisk/extensions.conf
-    echo "include => " >> /etc/asterisk/extensions.conf
-    echo "include => " >> /etc/asterisk/extensions.conf
+    echo "include => moviles" >> /etc/asterisk/extensions.conf
+    echo "include => numeros-inteligentes" >> /etc/asterisk/extensions.conf
+    echo "include => numeros-cortos" >> /etc/asterisk/extensions.conf
+    echo "include => nomadas" >> /etc/asterisk/extensions.conf
+    echo "include => internacionales" >> /etc/asterisk/extensions.conf
+    echo "; Fallback" >> /etc/asterisk/extensions.conf
+    echo ";exten => _X.,1,Dial(SIP/MovistarOut/\${EXTEN})" >> /etc/asterisk/extensions.conf
     
     echo "" >> /etc/asterisk/extensions.conf
     echo "[from-movistar]" >> /etc/asterisk/extensions.conf
