@@ -1,9 +1,11 @@
 #!/bin/bash
 
 ASTERISK_USERS_CONF_USERBASE=6000
+ASTERISK_DIALPLAN_USERS='6XXX'
 CURRENT_EXTENSION_NUM=${ASTERISK_USERS_CONF_USERBASE}
 CONFIGURED_EXTENSIONS=()
 ASK_TO_REBOOT=0
+RASPBERRY_IP_ADDRESS=''
 
 calc_wt_size() {
     # NOTE: it's tempting to redirect stderr to /dev/null, so supress error 
@@ -98,21 +100,24 @@ esac
 EOF
     chmod +x /etc/init.d/resize2fs_once &&
     update-rc.d resize2fs_once defaults &&
-    whiptail --msgbox "Root partition has been resized.\nThe filesystem will be enlarged upon the next reboot" 20 60 2
+    whiptail --msgbox "El tamaño de la partición raíz ha sido modificado.\nEl sistema de archivos se agrandará en el próximo reinicio." 20 60 2
 }
 
 do_finish() {
     # Cleanup backups
     [ -d /tmp/asterisk ] && rm -rf /tmp/asterisk
 
-    # Disable setup at boor
+    # Disable setup at boot
     if [ -e /etc/profile.d/setup-asterisk.sh ]; then
         rm -f /etc/profile.d/setup-asterisk.sh
     fi
 
     if [ $ASK_TO_REBOOT -eq 1 ]; then
-        whiptail --yesno "¿Desea reiniciar ahora?" 20 60 2
+        whiptail --yesno "Debe reiniciar el equipo para poder aplicar la configuración.\n\n¿Desea reiniciar ahora?" 20 60 2
         if [ $? -eq 0 ]; then # yes
+			if [ -n "${RASPBERRY_IP_ADDRESS}" ]; then
+                whiptail --msgbox "La dirección IP tras el reinicio será ${RASPBERRY_IP_ADDRESS}" 20 60 1
+            fi
             sync
             reboot
         fi
@@ -164,7 +169,7 @@ do_add_user() {
     local extension_password=''
     local extension_cid_number=''
 
-    # 1001 estÃ¡ reservado para el cliente del Comtrend VG-8050 via LAN
+    # 1001 está¡ reservado para el cliente del Comtrend VG-8050 via LAN
     if [ $CURRENT_EXTENSION_NUM -eq 1001 ]; then
         ((CURRENT_EXTENSION_NUM=CURRENT_EXTENSION_NUM+1))
     fi
@@ -185,21 +190,24 @@ do_add_user() {
     if [ $? -ne 0 ]; then
         extension_email=''
     fi
+
+	whiptail --yesno "Por favor, revise los datos de la extensión.\n\n             Extensión: ${CURRENT_EXTENSION_NUM}\n       Nombre completo: ${extension_fullname}\n    Correo electrónico: ${extension_email}\n\n¿Desea continuar?" 20 60 2
+    if [ $? -eq 0 ]; then # yes
+        echo ""  >> /etc/asterisk/users.conf
+        echo "[${extension_cid_number}]" >> /etc/asterisk/users.conf
+        echo "host=dynamic" >> /etc/asterisk/users.conf
+        echo "secret=${extension_password}" >> /etc/asterisk/users.conf
+        if [ -n "${extension_fullname}" ]; then
+            echo "fullname=${extension_fullname}" >> /etc/asterisk/users.conf
+        fi
+        if [ -n "${extension_email}" ]; then
+            echo "email=${extension_email}" >> /etc/asterisk/users.conf
+        fi
+        echo "cid_number=${extension_cid_number}" >> /etc/asterisk/users.conf
     
-    echo ""  >> /etc/asterisk/users.conf
-    echo "[${extension_cid_number}]" >> /etc/asterisk/users.conf
-    echo "host=dynamic" >> /etc/asterisk/users.conf
-    echo "secret=${extension_password}" >> /etc/asterisk/users.conf
-    if [ -n "${extension_fullname}" ]; then
-        echo "fullname=${extension_fullname}" >> /etc/asterisk/users.conf
-    fi
-    if [ -n "${extension_email}" ]; then
-        echo "email=${extension_email}" >> /etc/asterisk/users.conf
-    fi
-    echo "cid_number=${extension_cid_number}" >> /etc/asterisk/users.conf
-    
-    CONFIGURED_EXTENSIONS+=( "SIP/${CURRENT_EXTENSION_NUM}" )
-    ((CURRENT_EXTENSION_NUM=CURRENT_EXTENSION_NUM+1))
+        CONFIGURED_EXTENSIONS+=( "SIP/${CURRENT_EXTENSION_NUM}" )
+        ((CURRENT_EXTENSION_NUM=CURRENT_EXTENSION_NUM+1))
+	fi
 }
 
 do_movistar_ftth() {
@@ -381,24 +389,54 @@ do_movistar_ftth() {
     sed -e "s|^include => demo|include => outbound-movistar|" -i /etc/asterisk/extensions.conf
 }
 
-#do_movistar_ftth_comtrend() {
-    # Se registra y le puedo llamar pero el no puede llamar :(
-    # [1001]
-    # type=friend                     ; Friends place calls and receive calls
-    # authuser=${PHONENUMBER}
-    # defaultuser=authuser=${PHONENUMBER}
-    # fromuser=${PHONENUMBER}
-    # host=dynamic                    ; This peer register with us
-    # dtmfmode=inband                 ; Choices are inband, rfc2833, or info
-    # qualify=yes
-    # insecure=port,invite
-    # disallow=all
-    # allow=ulaw
-    # allow=alow
-    # allow=gsm
-    # regexten=${PHONENUMBER}
-    # subscribecontext=public
-#}
+do_movistar_ftth_comtrend() {
+
+    # Envía los invites a 192.168.1.3
+    dhcp_ip_address=$(ifconfig | grep -w inet |grep -v 127.0.0.1| awk '{print $2}' | cut -d ":" -f 2)
+    dhcp_bcast_address=$(ifconfig | grep -w inet |grep -v 127.0.0.1| awk '{print $3}' | cut -d ":" -f 2)
+    dhcp_netmask=$(ifconfig | grep -w inet |grep -v 127.0.0.1| awk '{print $4}' | cut -d ":" -f 2)
+	dhcp_gateway=$(ip route | awk '/default/ { print $3 }')
+
+    IFS=. read -r i1 i2 i3 i4 <<< "${dhcp_ip_address}"
+	IFS=. read -r m1 m2 m3 m4 <<< "${dhcp_netmask}"
+	dhcp_network=$(printf "%d.%d.%d.%d\n" "$((i1 & m1))" "$((i2 & m2))" "$((i3 & m3))" "$((i4 & m4))")
+	RASPBERRY_IP_ADDRESS=$(echo ${dhcp_network} | awk -F. '$4=3' OFS=".")
+
+    whiptail --yesno "Para que funcione el puerto FXS del Comtrend VG-8050 necesitamos configurar la dirección IP del Asterisk como ${RASPBERRY_IP_ADDRESS}.\n\n¿Desea continuar?" 20 60 2
+    if [ $? -eq 0 ]; then # yes
+        echo "auto lo" > /etc/network/interfaces
+        echo "iface lo inet loopback" >> /etc/network/interfaces
+        echo "" >> /etc/network/interfaces
+        echo "iface eth0 inet static" >> /etc/network/interfaces
+        echo "    address ${RASPBERRY_IP_ADDRESS}" >> /etc/network/interfaces
+        echo "    netmask ${dhcp_netmask}" >> /etc/network/interfaces
+        echo "    network ${dhcp_network}" >> /etc/network/interfaces
+        echo "    broadcast ${dhcp_bcast_address}" >> /etc/network/interfaces
+        echo "    gateway ${dhcp_gateway}" >> /etc/network/interfaces
+
+	    echo "" >> /etc/asterisk/sip.conf
+	    echo "[1001]" >> /etc/asterisk/sip.conf
+	    echo "type=peer" >> /etc/asterisk/sip.conf
+	    echo "secret=1001" >> /etc/asterisk/sip.conf
+	    echo "host=dynamic" >> /etc/asterisk/sip.conf
+	    echo "dtmfmode=inband" >> /etc/asterisk/sip.conf
+	    echo "qualify=yes" >> /etc/asterisk/sip.conf
+        echo "context=public" >> /etc/asterisk/sip.conf
+        echo "disallow=all" >> /etc/asterisk/sip.conf
+        echo "allow=ulaw" >> /etc/asterisk/sip.conf
+	    echo "allow=alaw" >> /etc/asterisk/sip.conf
+        echo "allow=gsm" >> /etc/asterisk/sip.conf
+		echo "context=public" >> /etc/asterisk/sip.conf
+
+        # Añadir la línea a las extensiones a llamar
+		sed -e "s|^exten => s,1,Dial(${sip_extensions})|exten => s,1,Dial(${sip_extensions}&SIP/1001)|" >> /etc/asterisk/extensions.conf
+        CONFIGURED_EXTENSIONS+=( "SIP/1001" )
+
+        whiptail --msgbox "Recuerde que al reiniciar su nueva dirección IP será ${RASPBERRY_IP_ADDRESS}" 20 60 1
+    else
+        RASPBERRY_IP_ADDRESS=''
+    fi
+}
 
 do_chan_dongle() {
     local sip_extensions=$( IFS=$'&'; echo "${CONFIGURED_EXTENSIONS[*]}" )
@@ -478,9 +516,14 @@ fi
 
 calc_wt_size
 
-do_expand_rootfs
+whiptail --msgbox "Bienvenido al instalador de Asterisk\n\nA continuación le guiaremos por el proceso de configuración del sistema y estará listo para utilizar su centralita Asterisk." 20 60 2
 
-do_set_userbase
+whiptail --yesno "¿Desea expandir el sistema para hacer uso de todo el disco duro?" 20 60 2 --yes-button Si --no-button No
+if [ $? -eq 1 ]; then
+    do_expand_rootfs
+fi
+
+# do_set_userbase
 
 while true; do
     do_add_user
