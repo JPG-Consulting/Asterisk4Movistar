@@ -341,18 +341,21 @@ function do_asterisk_setup() {
     [ -f /tmp/extensions.conf ] && rm /tmp/extensions.conf
     [ -f /tmp/modules.conf ] && rm /tmp/modules.conf
     [ -f /tmp/sip.conf ] && rm /tmp/sip.conf
+    [ -f /tmp/users.conf ] && rm /tmp/users.conf
 
     wget ${DOWNLOAD_BASE_URL}/configs/asterisk.conf -O /tmp/asterisk.conf
     wget ${DOWNLOAD_BASE_URL}/configs/dongle.conf -O /tmp/dongle.conf
     wget ${DOWNLOAD_BASE_URL}/configs/extensions.conf -O /tmp/extensions.conf
     wget ${DOWNLOAD_BASE_URL}/configs/modules.conf -O /tmp/modules.conf
     wget ${DOWNLOAD_BASE_URL}/configs/sip.conf -O /tmp/sip.conf
+    wget ${DOWNLOAD_BASE_URL}/configs/users.conf -O /tmp/users.conf
 
     cp /tmp/asterisk.conf ${MOUNT_PATH}/etc/asterisk/asterisk.conf
     cp /tmp/dongle.conf ${MOUNT_PATH}/etc/asterisk/dongle.conf
     cp /tmp/extensions.conf ${MOUNT_PATH}/etc/asterisk/extensions.conf
     cp /tmp/modules.conf ${MOUNT_PATH}/etc/asterisk/modules.conf
     cp /tmp/sip.conf ${MOUNT_PATH}/etc/asterisk/sip.conf
+    cp /tmp/users.conf ${MOUNT_PATH}/etc/asterisk/users.conf
 
     # Update the backup script
     [ -f /tmp/raspi-backup ] && rm /tmp/raspi-backup
