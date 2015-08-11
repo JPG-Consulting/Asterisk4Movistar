@@ -112,6 +112,8 @@ do_finish() {
         rm -f /etc/profile.d/setup-asterisk.sh
     fi
 
+	service asterisk restart
+
     if [ $ASK_TO_REBOOT -eq 1 ]; then
         whiptail --yesno "Debe reiniciar el equipo para poder aplicar la configuración.\n\n¿Desea reiniciar ahora?" 20 60 2
         if [ $? -eq 0 ]; then # yes
@@ -176,22 +178,22 @@ do_add_user() {
 
     extension_cid_number=${CURRENT_EXTENSION_NUM}
 
-    extension_password=$(whiptail --passwordbox "Introduzca la contraseña del usuario" 20 60 "" 3>&1 1>&2 2>&3)
+    extension_password=$(whiptail --title="Nueva Extensión" --passwordbox "Introduzca la contraseña del usuario" 20 60 "" 3>&1 1>&2 2>&3)
     if [ $? -ne 0 ]; then
         return 1
     fi
 
-    extension_fullname=$(whiptail --inputbox "Introduzca el nombre completo del usuario" 20 60 "" 3>&1 1>&2 2>&3)
+    extension_fullname=$(whiptail --title="Nueva Extensión" --inputbox "Introduzca el nombre completo del usuario" 20 60 "" 3>&1 1>&2 2>&3)
     if [ $? -ne 0 ]; then
         extension_fullname=''
     fi
     
-    extension_email=$(whiptail --inputbox "Introduzca el correo electrónico del usuario" 20 60 "" 3>&1 1>&2 2>&3)
+    extension_email=$(whiptail --title="Nueva Extensión" --inputbox "Introduzca el correo electrónico del usuario" 20 60 "" 3>&1 1>&2 2>&3)
     if [ $? -ne 0 ]; then
         extension_email=''
     fi
 
-	whiptail --yesno "Por favor, revise los datos de la extensión.\n\n             Extensión: ${CURRENT_EXTENSION_NUM}\n       Nombre completo: ${extension_fullname}\n    Correo electrónico: ${extension_email}\n\n¿Desea continuar?" 20 60 2
+	whiptail --title="Nueva Extensión" --yesno "Por favor, revise los datos de la extensión.\n\n             Extensión: ${CURRENT_EXTENSION_NUM}\n       Nombre completo: ${extension_fullname}\n    Correo electrónico: ${extension_email}\n\n¿Desea continuar?" 20 60 2
     if [ $? -eq 0 ]; then # yes
         echo ""  >> /etc/asterisk/users.conf
         echo "[${extension_cid_number}]" >> /etc/asterisk/users.conf
@@ -260,6 +262,10 @@ do_movistar_ftth() {
     echo "trustpid=yes" >> /etc/asterisk/sip.conf
     
     sed -e "s|^;register => 2345:password@sip_proxy/1234|;register => 2345:password@sip_proxy/1234\nregister => ${PHONENUMBER}@telefonica.net:${PHONENUMBER}@10.31.255.134:5070|" -i /etc/asterisk/sip.conf
+
+	echo "" >> /etc/asterisk/extensions.conf
+	echo "[internas]" >> /etc/asterisk/extensions.conf
+	echo "exten => _${ASTERISK_DIALPLAN_USERS},1,Dial(SIP/\${EXTEN})" >> /etc/asterisk/extensions.conf
 
     echo "" >> /etc/asterisk/extensions.conf
     echo "[nacionales]" >> /etc/asterisk/extensions.conf
@@ -373,6 +379,7 @@ do_movistar_ftth() {
 
     echo "" >> /etc/asterisk/extensions.conf
     echo "[outbound-movistar]" >> /etc/asterisk/extensions.conf
+	echo "include => internas" >> /etc/asterisk/extensions.conf
     echo "include => nacionales" >> /etc/asterisk/extensions.conf
     echo "include => moviles" >> /etc/asterisk/extensions.conf
     echo "include => numeros-inteligentes" >> /etc/asterisk/extensions.conf
@@ -431,6 +438,9 @@ do_movistar_ftth_comtrend() {
 
         # Añadir la línea a las extensiones a llamar
 		sed -e "s|,Dial(${sip_extensions})|,Dial(${sip_extensions}\&SIP/1001)|" -i /etc/asterisk/extensions.conf
+        # Añadir a las extensiones internas
+        sed -e "s|^\[internas\]$|\[internas\]\nexten => 1001,1,Dial(SIP/1001)|" -i /etc/asterisk/extensions.conf
+
         CONFIGURED_EXTENSIONS+=( "SIP/1001" )
 
         whiptail --msgbox "Recuerde que al reiniciar su nueva dirección IP será ${RASPBERRY_IP_ADDRESS}" 20 60 1
@@ -442,7 +452,7 @@ do_movistar_ftth_comtrend() {
 do_chan_dongle() {
     local sip_extensions=$( IFS=$'&'; echo "${CONFIGURED_EXTENSIONS[*]}" )
     
-    MOBILE_PHONENUMBER=$(whiptail --inputbox "Introduzca el número de teléfono móvil del pincho" 20 60 "$CURRENT_HOSTNAME" 3>&1 1>&2 2>&3)
+    MOBILE_PHONENUMBER=$(whiptail --inputbox "Introduzca el número de teléfono móvil del pincho precedido por el código del páis" 20 60 "+34" 3>&1 1>&2 2>&3)
     if [ $? -ne 0 ]; then
         return 1
     fi
@@ -475,13 +485,13 @@ do_chan_dongle() {
     # DISA
     whiptail --yesno "¿Desea habilitar DISA en el canal GSM?" 20 60 2 --yes-button Si --no-button No
     if [ $? -eq 0 ]; then
-        DONGLE_DISA_PHONENUMBER=$(whiptail --inputbox "Introduzca el número de teléfono desde el que accederá a DISA" 20 60 "$CURRENT_HOSTNAME" 3>&1 1>&2 2>&3)
+        DONGLE_DISA_PHONENUMBER=$(whiptail --title "DISA" --inputbox "Introduzca el número de teléfono desde el que accederá a DISA" 20 60 "$CURRENT_HOSTNAME" 3>&1 1>&2 2>&3)
         if [ $? -ne 0 ]; then
             DONGLE_DISA_PHONENUMBER=''
         fi
         
         if [ -n $DONGLE_DISA_PHONENUMBER ]; then
-            DONGLE_DISA_PIN=$(whiptail --passwordbox "Introduzca el PIN para acceder a DISA" 20 60 "$CURRENT_HOSTNAME" 3>&1 1>&2 2>&3)
+            DONGLE_DISA_PIN=$(whiptail --title "DISA" --passwordbox "Introduzca el PIN para acceder a DISA" 20 60 "$CURRENT_HOSTNAME" 3>&1 1>&2 2>&3)
             if [ $? -ne 0 ]; then
                 DONGLE_DISA_PIN=''
             fi
@@ -517,19 +527,21 @@ fi
 
 calc_wt_size
 
-whiptail --msgbox "Bienvenido al instalador de Asterisk\n\nA continuación le guiaremos por el proceso de configuración del sistema y estará listo para utilizar su centralita Asterisk." 20 60 2
+whiptail --title "Bienvenido" --msgbox "Bienvenido al instalador de Asterisk\n\nA continuación le guiaremos por el proceso de configuración del sistema y estará listo para utilizar su centralita Asterisk." 20 60 2
 
-whiptail --yesno "¿Desea expandir el sistema para hacer uso de todo el disco duro?" 20 60 2 --yes-button Si --no-button No
+whiptail --title "Raspberry PI" --yesno "¿Desea expandir el sistema para hacer uso de todo el disco duro?" 20 60 2 --yes-button Si --no-button No
 if [ $? -eq 0 ]; then
     do_expand_rootfs
 fi
 
 # do_set_userbase
 
+whiptail --title "Extensiones" --msgbox "A continuación configuraremos las extensiones desde las que podrémos conectarnos a nuestra centralita." 20 60 2
+
 while true; do
     do_add_user
 
-    whiptail --yesno "¿Desea agregar otro usuario?" 20 60 2 --yes-button Si --no-button No
+    whiptail --title "Extensiones" --yesno --defaultno "¿Desea agregar otra extensión?" 20 60 2 --yes-button Si --no-button No
     if [ $? -eq 1 ]; then
         break
     fi
@@ -537,13 +549,13 @@ done
 
 do_movistar_ftth
 
-whiptail --yesno "¿Desea configurar el Comtrend VG-8050 para utilizar los teléfonos analógicos?" 20 60 2 --yes-button Si --no-button No
+whiptail --title "Comtrend VG-8050" --yesno "¿Desea configurar el Comtrend VG-8050 para utilizar los teléfonos analógicos?" 20 60 2 --yes-button Si --no-button No
 if [ $? -eq 0 ]; then
     do_movistar_ftth_comtrend
 fi
 
 
-whiptail --yesno "¿Desea activar chan_dongle?" 20 60 2 --yes-button Si --no-button No
+whiptail --title "USB 3G Huawei" --yesno "El módulo chan_dongle permite conectarnos a la red GSM utilizando un pincho 3G de la marca Huawei.\n\n¿Desea activar el módulo chan_dongle?" 20 60 2 --yes-button Si --no-button No
 if [ $? -eq 0 ]; then
     do_chan_dongle
 fi
