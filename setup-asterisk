@@ -390,6 +390,7 @@ do_movistar_ftth() {
 }
 
 do_movistar_ftth_comtrend() {
+    local sip_extensions=$( IFS=$'&'; echo "${CONFIGURED_EXTENSIONS[*]}" )
 
     # Envía los invites a 192.168.1.3
     dhcp_ip_address=$(ifconfig | grep -w inet |grep -v 127.0.0.1| awk '{print $2}' | cut -d ":" -f 2)
@@ -429,7 +430,7 @@ do_movistar_ftth_comtrend() {
 		echo "context=public" >> /etc/asterisk/sip.conf
 
         # Añadir la línea a las extensiones a llamar
-		sed -e "s|^exten => s,1,Dial(${sip_extensions})|exten => s,1,Dial(${sip_extensions}&SIP/1001)|" >> /etc/asterisk/extensions.conf
+		sed -e "s|,Dial(${sip_extensions})|,Dial(${sip_extensions}\&SIP/1001)|" -i /etc/asterisk/extensions.conf
         CONFIGURED_EXTENSIONS+=( "SIP/1001" )
 
         whiptail --msgbox "Recuerde que al reiniciar su nueva dirección IP será ${RASPBERRY_IP_ADDRESS}" 20 60 1
