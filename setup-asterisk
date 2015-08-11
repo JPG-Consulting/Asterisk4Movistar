@@ -519,7 +519,7 @@ calc_wt_size
 whiptail --msgbox "Bienvenido al instalador de Asterisk\n\nA continuación le guiaremos por el proceso de configuración del sistema y estará listo para utilizar su centralita Asterisk." 20 60 2
 
 whiptail --yesno "¿Desea expandir el sistema para hacer uso de todo el disco duro?" 20 60 2 --yes-button Si --no-button No
-if [ $? -eq 1 ]; then
+if [ $? -eq 0 ]; then
     do_expand_rootfs
 fi
 
@@ -535,6 +535,12 @@ while true; do
 done
 
 do_movistar_ftth
+
+whiptail --yesno "¿Desea configurar el Comtrend VG-8050 para utilizar los teléfonos analógicos?" 20 60 2 --yes-button Si --no-button No
+if [ $? -eq 0 ]; then
+    do_movistar_ftth_comtrend
+fi
+
 
 whiptail --yesno "¿Desea activar chan_dongle?" 20 60 2 --yes-button Si --no-button No
 if [ $? -eq 0 ]; then
