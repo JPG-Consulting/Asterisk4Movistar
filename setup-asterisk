@@ -1,11 +1,14 @@
 #!/bin/bash
 
 CURRENT_USER_EXTENSION_ID=6000
+ASTERISK_DIALPLAN_USERS=6XXX
+
 ASTERISK_USER_EXTENSIONS=()
 ASTERISK_TRUNK_PHONENUMBERS=()
 
 ASTERISK_TRUNK_MOVISTAR_FTTH_OUT=''
 ASTERISK_TRUNK_MOVISTAR_FTTH_IN=''
+COMTREND_VG8050_EXTENSION=''
 
 do_comtrend_vg8050_fxs() {
 	# Envía los invites a 192.168.1.3
@@ -46,7 +49,142 @@ allow=ulaw
 allow=alaw
 allow=gsm
 EOF
+
+		COMTREND_VG8050_EXTENSION=1001
 	fi
+}
+
+do_dialplan_setup() {
+	echo "" >> /etc/asterisk/extensions.conf
+	echo "[internas]" >> /etc/asterisk/extensions.conf
+	echo "exten => _${ASTERISK_DIALPLAN_USERS},1,Dial(SIP/\${EXTEN})" >> /etc/asterisk/extensions.conf
+	if [ -n "${COMTREND_VG8050_EXTENSION}" ]; then
+		echo "exten => ${COMTREND_VG8050_EXTENSION},1,Dial(SIP/${COMTREND_VG8050_EXTENSION})"  >> /etc/asterisk/extensions.conf
+	fi
+
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[nacionales]" >> /etc/asterisk/extensions.conf
+    echo "exten => _[89]ZXXXXXXX,1,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/\${EXTEN})" >> /etc/asterisk/extensions.conf
+
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[moviles]" >> /etc/asterisk/extensions.conf
+    echo "exten => _6XXXXXXXX,1,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/\${EXTEN})" >> /etc/asterisk/extensions.conf
+    echo "exten => _7[1234]XXXXXXX,1,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/\${EXTEN})" >> /etc/asterisk/extensions.conf
+
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[numeros-inteligente-gratuitos]" >> /etc/asterisk/extensions.conf
+    echo "exten => _[89]00XXXXXX,1,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/\${EXTEN})" >> /etc/asterisk/extensions.conf
+
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[numeros-inteligente-precio-ordinario]" >> /etc/asterisk/extensions.conf
+    echo "exten => _90[12]XXXXXX,1,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/\${EXTEN})" >> /etc/asterisk/extensions.conf
+
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[numeros-inteligente-tarificacion-adicional]" >> /etc/asterisk/extensions.conf
+    if [ -n "$PIN_TARIFICACION_ADICIONAL" ]; then
+        echo "exten => _80[367]XXXXXX,1,Authenticate(${PIN_TARIFICACION_ADICIONAL})" >> /etc/asterisk/extensions.conf
+        echo "exten => _80[367]XXXXXX,2,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/\${EXTEN})" >> /etc/asterisk/extensions.conf
+        echo "exten => _90[57]XXXXXX,1,Authenticate(${PIN_TARIFICACION_ADICIONAL})" >> /etc/asterisk/extensions.conf
+        echo "exten => _90[57]XXXXXX,2,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/\${EXTEN})" >> /etc/asterisk/extensions.conf
+    else
+        echo "exten => _80[367]XXXXXX,1,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/\${EXTEN})" >> /etc/asterisk/extensions.conf
+        echo "exten => _90[57]XXXXXX,1,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/\${EXTEN})" >> /etc/asterisk/extensions.conf
+    fi
+    
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[numeros-inteligente-personales]" >> /etc/asterisk/extensions.conf
+    echo "exten => _70XXXXXXX,1,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/\${EXTEN})" >> /etc/asterisk/extensions.conf
+
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[numeros-inteligentes]" >> /etc/asterisk/extensions.conf
+    echo "include => numeros-inteligente-gratuitos" >> /etc/asterisk/extensions.conf
+    echo "include => numeros-inteligente-precio-ordinario" >> /etc/asterisk/extensions.conf
+    echo "include => numeros-inteligente-tarificacion-adicional" >> /etc/asterisk/extensions.conf
+    echo "include => numeros-inteligente-personales" >> /etc/asterisk/extensions.conf
+
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[emergencias]" >> /etc/asterisk/extensions.conf
+    echo "exten => 112,1,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/112)" >> /etc/asterisk/extensions.conf
+    echo "exten => 061,1,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/061)" >> /etc/asterisk/extensions.conf
+    echo "exten => 062,1,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/062)" >> /etc/asterisk/extensions.conf
+    echo "exten => 080,1,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/080)" >> /etc/asterisk/extensions.conf
+    echo "exten => 085,1,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/085)" >> /etc/asterisk/extensions.conf
+    echo "exten => 088,1,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/088)" >> /etc/asterisk/extensions.conf
+    echo "exten => 091,1,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/091)" >> /etc/asterisk/extensions.conf
+    echo "exten => 092,1,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/092)" >> /etc/asterisk/extensions.conf
+    echo "exten => 1006,1,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/1006)" >> /etc/asterisk/extensions.conf
+
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[informacion-administrativa]" >> /etc/asterisk/extensions.conf
+    echo "exten => 010,1,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/010)" >> /etc/asterisk/extensions.conf
+    echo "exten => 012,1,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/012)" >> /etc/asterisk/extensions.conf
+    echo "exten => 060,1,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/060)" >> /etc/asterisk/extensions.conf
+
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[atencion-informacion-otros]" >> /etc/asterisk/extensions.conf
+    echo "exten => 011,1,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/011)" >> /etc/asterisk/extensions.conf
+    echo "exten => 016,1,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/016)" >> /etc/asterisk/extensions.conf
+    echo "exten => 116XXX,1,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/\${EXTEN})" >> /etc/asterisk/extensions.conf
+
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[consultas]" >> /etc/asterisk/extensions.conf
+    echo "exten => _118XX,1,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/\${EXTEN})" >> /etc/asterisk/extensions.conf
+
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[atencion-clientes]" >> /etc/asterisk/extensions.conf
+    echo "exten => _1[34567]XX,1,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/\${EXTEN})" >> /etc/asterisk/extensions.conf
+    echo "exten => _[12]2XX,1,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/\${EXTEN})" >> /etc/asterisk/extensions.conf
+
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[llamada-oculta]" >> /etc/asterisk/extensions.conf
+    echo "exten => 069,1,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/069)" >> /etc/asterisk/extensions.conf
+
+    echo "" >> /etc/asterisk/extensions.conf
+    echo ";[seleccion-operador]" >> /etc/asterisk/extensions.conf
+    echo "; Códigos de selección de operador" >> /etc/asterisk/extensions.conf
+
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[numeros-cortos]" >> /etc/asterisk/extensions.conf
+    echo "include => emergencias" >> /etc/asterisk/extensions.conf
+    echo "include => informacion-administrativa" >> /etc/asterisk/extensions.conf
+    echo "include => atencion-informacion-otros" >> /etc/asterisk/extensions.conf
+    echo "include => consultas" >> /etc/asterisk/extensions.conf
+    echo "include => atencion-clientes" >> /etc/asterisk/extensions.conf
+    echo "include => llamada-oculta" >> /etc/asterisk/extensions.conf
+    echo ";include => seleccion-operador" >> /etc/asterisk/extensions.conf
+
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[nomadas]" >> /etc/asterisk/extensions.conf
+    echo "exten => _51XXXXXXXXX,1,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/\${EXTEN})" >> /etc/asterisk/extensions.conf
+
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[internacionales]" >> /etc/asterisk/extensions.conf
+    echo "exten => _00XXXXXX.,1,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/\${EXTEN})" >> /etc/asterisk/extensions.conf
+
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[salientes]" >> /etc/asterisk/extensions.conf
+    echo "include => nacionales" >> /etc/asterisk/extensions.conf
+    echo "include => moviles" >> /etc/asterisk/extensions.conf
+    echo "include => numeros-inteligentes" >> /etc/asterisk/extensions.conf
+    echo "include => numeros-cortos" >> /etc/asterisk/extensions.conf
+    echo "include => nomadas" >> /etc/asterisk/extensions.conf
+    echo "include => internacionales" >> /etc/asterisk/extensions.conf
+
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[outbound-movistar]" >> /etc/asterisk/extensions.conf
+	echo "include => internas" >> /etc/asterisk/extensions.conf
+    echo "include => nacionales" >> /etc/asterisk/extensions.conf
+    echo "include => moviles" >> /etc/asterisk/extensions.conf
+    echo "include => numeros-inteligentes" >> /etc/asterisk/extensions.conf
+    echo "include => numeros-cortos" >> /etc/asterisk/extensions.conf
+    echo "include => nomadas" >> /etc/asterisk/extensions.conf
+    echo "include => internacionales" >> /etc/asterisk/extensions.conf
+    
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[from-movistar]" >> /etc/asterisk/extensions.conf
+	echo "include => internas" >> /etc/asterisk/extensions.conf
+    
+    sed -e "s|^include => demo|include => outbound-movistar|" -i /etc/asterisk/extensions.conf
 }
 
 do_movistar_sip_account() {
@@ -215,3 +353,5 @@ if [ $? -eq 0 ]; then
 		do_comtrend_vg8050_fxs
 	fi
 fi
+
+do_dialplan_setup
