@@ -1,12 +1,17 @@
 #!/bin/bash
 
-CURRENT_EXTENSION_ID=6000
+CURRENT_USER_EXTENSION_ID=6000
+ASTERISK_USER_EXTENSIONS=()
+ASTERISK_TRUNK_PHONENUMBERS=()
+
+ASTERISK_TRUNK_MOVISTAR_FTTH_OUT=''
+ASTERISK_TRUNK_MOVISTAR_FTTH_IN=''
 
 do_comtrend_vg8050_fxs() {
 	# Envía los invites a 192.168.1.3
-	dhcp_ip_address=$(ifconfig | grep -w inet |grep -v 127.0.0.1| awk '{print $2}' | cut -d ":" -f 2)
-	dhcp_bcast_address=$(ifconfig | grep -w inet |grep -v 127.0.0.1| awk '{print $3}' | cut -d ":" -f 2)
-	dhcp_netmask=$(ifconfig | grep -w inet |grep -v 127.0.0.1| awk '{print $4}' | cut -d ":" -f 2)
+	dhcp_ip_address=$(ifconfig eth0 | grep -w inet |grep -v 127.0.0.1| awk '{print $2}' | cut -d ":" -f 2)
+	dhcp_bcast_address=$(ifconfig eth0 | grep -w inet |grep -v 127.0.0.1| awk '{print $3}' | cut -d ":" -f 2)
+	dhcp_netmask=$(ifconfig eth0 | grep -w inet |grep -v 127.0.0.1| awk '{print $4}' | cut -d ":" -f 2)
 	dhcp_gateway=$(ip route | awk '/default/ { print $3 }')
 	
 	IFS=. read -r i1 i2 i3 i4 <<< "${dhcp_ip_address}"
@@ -16,7 +21,7 @@ do_comtrend_vg8050_fxs() {
 	
 	whiptail --title "Comtrend VG-8050" --yesno "Para que funcione el puerto FXS del Comtrend VG-8050 necesitamos configurar la dirección IP del Asterisk como ${RASPBERRY_IP_ADDRESS}.\n\n¿Desea continuar?" 20 60 2
     if [ $? -eq 0 ]; then # yes
-		cat << EOF > /etc/network/interfaces
+		cat <<EOF > /etc/network/interfaces
 auto lo
 iface lo inet loopback
 
@@ -24,11 +29,11 @@ iface eth0 inet static
     address ${RASPBERRY_IP_ADDRESS}
 	netmask ${dhcp_netmask}
 	network ${dhcp_network}
-	broadcast ${dhcp_bcast_address}" >> /etc/network/interfaces
+	broadcast ${dhcp_bcast_address}
 	gateway ${dhcp_gateway}
-		EOF
+EOF
 
-		cat << EOF >> /etc/asterisk/sip.conf
+		cat <<EOF >> /etc/asterisk/sip.conf
 
 [1001]
 type=peer
@@ -40,8 +45,58 @@ disallow=all
 allow=ulaw
 allow=alaw
 allow=gsm
-		EOF
+EOF
 	fi
+}
+
+do_movistar_sip_account() {
+	local movistar_phonenumber=''
+	local movistar_domain='telefonica.net'
+	local movistar_domain_port='5060'
+	local movistar_outboundproxy='10.31.255.134'
+	local movistar_outboundproxy_port='5070'
+	local movistar_dtmfmode='auto'
+	
+	movistar_phonenumber=$(whiptail --title="Movistar VoIP" --inputbox "Introduzca su número de teléfono fijo" 20 60 "" 3>&1 1>&2 2>&3)
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+	
+	cat <<EOF >> /etc/asterisk/sip.conf
+
+[Movistar](!)
+type=peer
+secret=${movistar_phonenumber}
+dtmfmode=${movistar_dtmfmode}
+insecure=port,invite
+outboundproxy=${movistar_outboundproxy}:${movistar_outboundproxy_port}
+nat=force_rport,comedia
+disallow=all
+allow=ulaw
+allow=alaw
+
+[MovistarOut](Movistar)
+host=${movistar_domain}
+from-domain=${movistar_domain}
+fromuser=${movistar_phonenumber}
+
+[MovistarIn](Movistar)
+context=from-movistar
+defaultuser=${movistar_phonenumber}
+host=${movistar_outboundproxy}
+port=${movistar_domain_port}
+qualify=no
+trustpid=yes
+EOF
+	
+	sed -e "s|^;register => 2345:password@sip_proxy/1234|;register => 2345:password@sip_proxy/1234\nregister => ${movistar_phonenumber}@${movistar_domain}:${movistar_phonenumber}@${movistar_outboundproxy}:${movistar_outboundproxy_port}|" -i /etc/asterisk/sip.conf
+
+	# Guardamos el numero
+	ASTERISK_TRUNK_PHONENUMBERS+=( "${movistar_phonenumber}" )
+	
+	# Guardamos los trunks
+	ASTERISK_TRUNK_MOVISTAR_FTTH_OUT="SIP/MovistarOut"
+	ASTERISK_TRUNK_MOVISTAR_FTTH_IN='SIP/MovistarIn'
 }
 
 do_user_add() {
@@ -52,7 +107,7 @@ do_user_add() {
 	local extension_vmsecret=''
 	local extension_vmsecret_confirm=''
 	
-	local whiptail_title="Nueva extensión: ${CURRENT_EXTENSION_ID}"
+	local whiptail_title="Nueva extensión: ${CURRENT_USER_EXTENSION_ID}"
 	
     while true; do
         extension_password=$(whiptail --title="${whiptail_title}" --passwordbox "Introduzca la contraseña de la extensión" 20 60 "" 3>&1 1>&2 2>&3)
@@ -131,25 +186,31 @@ do_user_add() {
 		echo "vmsecret = ${extension_vmsecret}" >> /etc/asterisk/users.conf
     fi
 	
-	((CURRENT_EXTENSION_ID=CURRENT_EXTENSION_ID+1))
+	ASTERISK_USER_EXTENSIONS+=( "${CURRENT_USER_EXTENSION_ID}" )
+	((CURRENT_USER_EXTENSION_ID=CURRENT_USER_EXTENSION_ID+1))
 }
 
 
 # Wizzard
 
-whiptail --title "Extensiones" --yesno --defaultno "¿Desea crear algún usuario?" 20 60 2 --yes-button Si --no-button No
-if [ $? -eq 1 ]; then
+whiptail --title "Extensiones" --yesno "¿Desea crear algún usuario?" 20 60 2 --defaultyes --yes-button Si --no-button No
+if [ $? -eq 0 ]; then
 	while true; do
 		do_user_add
-		whiptail --title "Extensiones" --yesno --defaultno "¿Desea agregar otro usuario?" 20 60 2 --yes-button Si --no-button No
+		whiptail --title "Extensiones" --yesno "¿Desea agregar otro usuario?" 20 60 2 --defaultno --yes-button Si --no-button No
 		if [ $? -eq 1 ]; then
 			break
 		fi
 	done
 fi
 
-# ToDo: Detectar el router por la IP... si es comtrend lanzar esto
-whiptail --title "Comtrend VG-8050" --yesno "¿Desea configurar el Comtrend VG-8050 para utilizar los teléfonos analógicos?" 20 60 2 --yes-button Si --no-button No
+whiptail --title "Movistar" --yesno "¿Desea configurar una cuenta SIP de Movistar?" 20 60 2 --defaultyes --yes-button Si --no-button No
 if [ $? -eq 0 ]; then
-	do_comtrend_vg8050_fxs
+	do_movistar_sip_account
+
+	# ToDo: Detectar el router por la IP... si es comtrend lanzar esto
+	whiptail --title "Comtrend VG-8050" --yesno "¿Desea configurar el Comtrend VG-8050 para utilizar los teléfonos analógicos?" 20 60 2 --yes-button Si --no-button No
+	if [ $? -eq 0 ]; then
+		do_comtrend_vg8050_fxs
+	fi
 fi
