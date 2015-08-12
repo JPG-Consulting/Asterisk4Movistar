@@ -74,8 +74,8 @@ do_user_add() {
 	fi
 	
 	# Write to temp
-	[ ! -d ${TEMP_PATH}/users.conf/ ] mkdir -p ${TEMP_PATH}/users.conf/
-	[ -f ${TEMP_PATH}/users.conf/${CURRENT_EXTENSION_ID} ] rm ${TEMP_PATH}/users.conf/${CURRENT_EXTENSION_ID}
+	[ ! -d ${TEMP_PATH}/users.conf/ ] && mkdir -p ${TEMP_PATH}/users.conf/
+	[ -f ${TEMP_PATH}/users.conf/${CURRENT_EXTENSION_ID} ] && rm ${TEMP_PATH}/users.conf/${CURRENT_EXTENSION_ID}
 	
 	touch ${TEMP_PATH}/users.conf/${CURRENT_EXTENSION_ID}
 	
@@ -95,4 +95,29 @@ do_user_add() {
     fi
 }
 
-do_user_add
+do_write_confs() {
+	# Write users.conf
+	for filename in ${TEMP_PATH}/users.conf/*; do
+		userid=${filename##*/}
+		echo "" >> /etc/asterisk/users.conf
+		echo "[${userid}]" >> /etc/asterisk/users.conf
+		cat $filename >> /etc/asterisk/users.conf
+	done
+	
+	# Delete the temp files
+	rm -rf ${TEMP_PATH}/users.conf
+}
+
+# Wizzard
+while true; do
+	do_user_add
+	
+	if [ $? -eq 0 ]; then
+		whiptail --title "Extensiones" --yesno --defaultno "¿Desea agregar otra extensión?" 20 60 2 --yes-button Si --no-button No
+		if [ $? -eq 1 ]; then
+			break
+		fi
+	fi
+done
+
+do_write_confs
