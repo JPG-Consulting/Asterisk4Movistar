@@ -1,7 +1,48 @@
 #!/bin/bash
 
 CURRENT_EXTENSION_ID=6000
-TEMP_PATH='/tmp/asterisk'
+
+do_comtrend_vg8050_fxs() {
+	# Envía los invites a 192.168.1.3
+	dhcp_ip_address=$(ifconfig | grep -w inet |grep -v 127.0.0.1| awk '{print $2}' | cut -d ":" -f 2)
+	dhcp_bcast_address=$(ifconfig | grep -w inet |grep -v 127.0.0.1| awk '{print $3}' | cut -d ":" -f 2)
+	dhcp_netmask=$(ifconfig | grep -w inet |grep -v 127.0.0.1| awk '{print $4}' | cut -d ":" -f 2)
+	dhcp_gateway=$(ip route | awk '/default/ { print $3 }')
+	
+	IFS=. read -r i1 i2 i3 i4 <<< "${dhcp_ip_address}"
+	IFS=. read -r m1 m2 m3 m4 <<< "${dhcp_netmask}"
+	dhcp_network=$(printf "%d.%d.%d.%d\n" "$((i1 & m1))" "$((i2 & m2))" "$((i3 & m3))" "$((i4 & m4))")
+	RASPBERRY_IP_ADDRESS=$(echo ${dhcp_network} | awk -F. '$4=3' OFS=".")
+	
+	whiptail --title "Comtrend VG-8050" --yesno "Para que funcione el puerto FXS del Comtrend VG-8050 necesitamos configurar la dirección IP del Asterisk como ${RASPBERRY_IP_ADDRESS}.\n\n¿Desea continuar?" 20 60 2
+    if [ $? -eq 0 ]; then # yes
+		cat << EOF > /etc/network/interfaces
+auto lo
+iface lo inet loopback
+
+iface eth0 inet static
+    address ${RASPBERRY_IP_ADDRESS}
+	netmask ${dhcp_netmask}
+	network ${dhcp_network}
+	broadcast ${dhcp_bcast_address}" >> /etc/network/interfaces
+	gateway ${dhcp_gateway}
+		EOF
+
+		cat << EOF >> /etc/asterisk/sip.conf
+
+[1001]
+type=peer
+secret=1001
+host=dynamic
+dtmfmode=inband
+qualify=yes
+disallow=all
+allow=ulaw
+allow=alaw
+allow=gsm
+		EOF
+	fi
+}
 
 do_user_add() {
 	local extension_fullname=''
@@ -73,51 +114,44 @@ do_user_add() {
 		done
 	fi
 	
-	# Write to temp
-	[ ! -d ${TEMP_PATH}/users.conf/ ] && mkdir -p ${TEMP_PATH}/users.conf/
-	[ -f ${TEMP_PATH}/users.conf/${CURRENT_EXTENSION_ID} ] && rm ${TEMP_PATH}/users.conf/${CURRENT_EXTENSION_ID}
-	
-	touch ${TEMP_PATH}/users.conf/${CURRENT_EXTENSION_ID}
-	
+	# Write
+	echo "" >> /etc/asterisk/users.conf
 	if [ -n "${extension_fullname}" ]; then
-        echo "fullname = ${extension_fullname}" >> ${TEMP_PATH}/users.conf/${CURRENT_EXTENSION_ID}
+        echo "fullname = ${extension_fullname}" >> /etc/asterisk/users.conf
     fi
 	
 	if [ -n "${extension_email}" ]; then
-        echo "email = ${extension_email}" >> ${TEMP_PATH}/users.conf/${CURRENT_EXTENSION_ID}
+        echo "email = ${extension_email}" >> /etc/asterisk/users.conf
     fi
 		
-	echo "secret = ${extension_password}" >> ${TEMP_PATH}/users.conf/${CURRENT_EXTENSION_ID}
+	echo "secret = ${extension_password}" >> /etc/asterisk/users.conf
 	
 	if [ -n "${extension_vmsecret}" ]; then
-        echo "hasvoicemail = yes" >> ${TEMP_PATH}/users.conf/${CURRENT_EXTENSION_ID}
-		echo "vmsecret = ${extension_vmsecret}" >> ${TEMP_PATH}/users.conf/${CURRENT_EXTENSION_ID}
+        echo "hasvoicemail = yes" >> /etc/asterisk/users.conf
+		echo "vmsecret = ${extension_vmsecret}" >> /etc/asterisk/users.conf
     fi
+	
+	((CURRENT_EXTENSION_ID=CURRENT_EXTENSION_ID+1))
 }
 
-do_write_confs() {
-	# Write users.conf
-	for filename in ${TEMP_PATH}/users.conf/*; do
-		userid=${filename##*/}
-		echo "" >> /etc/asterisk/users.conf
-		echo "[${userid}]" >> /etc/asterisk/users.conf
-		cat $filename >> /etc/asterisk/users.conf
-	done
-	
-	# Delete the temp files
-	rm -rf ${TEMP_PATH}/users.conf
-}
 
 # Wizzard
-while true; do
-	do_user_add
-	
-	if [ $? -eq 0 ]; then
-		whiptail --title "Extensiones" --yesno --defaultno "¿Desea agregar otra extensión?" 20 60 2 --yes-button Si --no-button No
+
+whiptail --title "Extensiones" --yesno --defaultno "¿Desea crear algún usuario?" 20 60 2 --yes-button Si --no-button No
+if [ $? -eq 1 ]; then
+	while true; do
+		do_user_add
+		whiptail --title "Extensiones" --yesno --defaultno "¿Desea agregar otro usuario?" 20 60 2 --yes-button Si --no-button No
 		if [ $? -eq 1 ]; then
 			break
 		fi
-	fi
-done
+	done
+fi
+
+# ToDo: Detectar el router por la IP... si es comtrend lanzar esto
+whiptail --title "Comtrend VG-8050" --yesno "¿Desea configurar el Comtrend VG-8050 para utilizar los teléfonos analógicos?" 20 60 2 --yes-button Si --no-button No
+if [ $? -eq 0 ]; then
+	do_comtrend_vg8050_fxs
+fi
 
 do_write_confs
