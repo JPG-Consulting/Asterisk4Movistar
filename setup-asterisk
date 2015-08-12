@@ -12,6 +12,9 @@ COMTREND_VG8050_EXTENSION=''
 
 ASTERISK_PARENTAL_PROTECTION_PIN=''
 
+RASPBERRY_IP_ADDRESS=''
+ASK_TO_REBOOT=0
+
 do_comtrend_vg8050_fxs() {
 	# Envía los invites a 192.168.1.3
 	dhcp_ip_address=$(ifconfig eth0 | grep -w inet |grep -v 127.0.0.1| awk '{print $2}' | cut -d ":" -f 2)
@@ -208,6 +211,105 @@ do_dialplan_setup() {
     sed -e "s|^include => demo|include => outbound-movistar|" -i /etc/asterisk/extensions.conf
 }
 
+do_expand_rootfs() {
+    if ! [ -h /dev/root ]; then
+        whiptail --msgbox "/dev/root does not exist or is not a symlink. Don't know how to expand" 20 60 2
+        return 0
+    fi
+
+    ROOT_PART=$(readlink /dev/root)
+    PART_NUM=${ROOT_PART#mmcblk0p}
+    if [ "$PART_NUM" = "$ROOT_PART" ]; then
+        whiptail --msgbox "/dev/root is not an SD card. Don't know how to expand" 20 60 2
+        return 0
+    fi
+
+    # NOTE: the NOOBS partition layout confuses parted. For now, let's only 
+    # agree to work with a sufficiently simple partition layout
+    if [ "$PART_NUM" -ne 2 ]; then
+        whiptail --msgbox "Your partition layout is not currently supported by this tool. You are probably using NOOBS, in which case your root filesystem is already expanded anyway." 20 60 2
+        return 0
+    fi
+
+    LAST_PART_NUM=$(parted /dev/mmcblk0 -ms unit s p | tail -n 1 | cut -f 1 -d:)
+
+    if [ "$LAST_PART_NUM" != "$PART_NUM" ]; then
+        whiptail --msgbox "/dev/root is not the last partition. Don't know how to expand" 20 60 2
+        return 0
+    fi
+
+    # Get the starting offset of the root partition
+    PART_START=$(parted /dev/mmcblk0 -ms unit s p | grep "^${PART_NUM}" | cut -f 2 -d:)
+    [ "$PART_START" ] || return 1
+    # Return value will likely be error for fdisk as it fails to reload the
+    # partition table because the root fs is mounted
+    fdisk /dev/mmcblk0 <<EOF
+p
+d
+$PART_NUM
+n
+p
+$PART_NUM
+$PART_START
+
+p
+w
+EOF
+    ASK_TO_REBOOT=1
+
+    # now set up an init.d script
+cat <<\EOF > /etc/init.d/resize2fs_once &&
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          resize2fs_once
+# Required-Start:
+# Required-Stop:
+# Default-Start: 2 3 4 5 S
+# Default-Stop:
+# Short-Description: Resize the root filesystem to fill partition
+# Description:
+### END INIT INFO
+. /lib/lsb/init-functions
+case "$1" in
+    start)
+        log_daemon_msg "Starting resize2fs_once" &&
+        resize2fs /dev/root &&
+        rm /etc/init.d/resize2fs_once &&
+        update-rc.d resize2fs_once remove &&
+        log_end_msg $?
+        ;;
+    *)
+        echo "Usage: $0 start" >&2
+        exit 3
+        ;;
+esac
+EOF
+    chmod +x /etc/init.d/resize2fs_once &&
+    update-rc.d resize2fs_once defaults &&
+    whiptail --msgbox "El tamaño de la partición raíz ha sido modificado.\nEl sistema de archivos se agrandará en el próximo reinicio." 20 60 2
+}
+
+do_finish() {
+    # Disable setup at boot
+    if [ -e /etc/profile.d/setup-asterisk.sh ]; then
+        rm -f /etc/profile.d/setup-asterisk.sh
+    fi
+
+	service asterisk restart
+
+    if [ $ASK_TO_REBOOT -eq 1 ]; then
+        whiptail --yesno "Debe reiniciar el equipo para poder aplicar la configuración.\n\n¿Desea reiniciar ahora?" 20 60 2
+        if [ $? -eq 0 ]; then # yes
+			if [ -n "${RASPBERRY_IP_ADDRESS}" ]; then
+                whiptail --msgbox "La dirección IP tras el reinicio será ${RASPBERRY_IP_ADDRESS}" 20 60 1
+            fi
+            sync
+            reboot
+        fi
+    fi
+    exit 0
+}
+
 do_movistar_sip_account() {
 	local movistar_phonenumber=''
 	local movistar_domain='telefonica.net'
@@ -379,6 +481,11 @@ do_user_add() {
 
 # Wizzard
 
+whiptail --title "Tarjeta SD" --yesno "¿Desea expandir el sistema de archivos?" 20 60 2 --yes-button Si --no-button No
+if [ $? -eq 0 ]; then
+	do_expand_rootfs
+fi
+
 whiptail --title "Extensiones" --yesno "¿Desea crear algún usuario?" 20 60 2 --yes-button Si --no-button No
 if [ $? -eq 0 ]; then
 	while true; do
@@ -409,3 +516,5 @@ if [ $? -eq 0 ]; then
 fi
 
 do_dialplan_setup
+
+do_finish
