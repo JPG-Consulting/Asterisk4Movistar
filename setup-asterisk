@@ -138,7 +138,7 @@ do_user_add() {
         extension_email=''
     fi
 	
-	whiptail --title="${whiptail_title}" --yesno "¿Desea activar el buzón de voz para ésta extensión?" 20 60 2
+	whiptail --title="${whiptail_title}" --yesno "¿Desea activar el buzón de voz para ésta extensión?" 20 60 2 --defaultno
     if [ $? -eq 0 ]; then # yes
 		while true; do
 			extension_vmsecret=$(whiptail --title="${whiptail_title}" --passwordbox "Introduzca el código PIN para el buzón de voz" 20 60 "" 3>&1 1>&2 2>&3)
