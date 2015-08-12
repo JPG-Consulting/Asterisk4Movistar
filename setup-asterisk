@@ -55,6 +55,20 @@ EOF
 }
 
 do_dialplan_setup() {
+	local ring_all_group=''
+	
+	if [ -n "${COMTREND_VG8050_EXTENSION}" ]; then
+		ring_all_group="SIP/${COMTREND_VG8050_EXTENSION}"
+	fi
+	
+	for extension_id in "${ASTERISK_TRUNK_PHONENUMBERS[@]}"; do
+		if [ -n "${ring_all_group}" ]; then
+			ring_all_group="${ring_all_group}&SIP/${extension_id}"
+		else
+			ring_all_group="SIP/${extension_id}"
+		fi
+	done
+	
 	echo "" >> /etc/asterisk/extensions.conf
 	echo "[internas]" >> /etc/asterisk/extensions.conf
 	echo "exten => _${ASTERISK_DIALPLAN_USERS},1,Dial(SIP/\${EXTEN})" >> /etc/asterisk/extensions.conf
@@ -183,6 +197,7 @@ do_dialplan_setup() {
     echo "" >> /etc/asterisk/extensions.conf
     echo "[from-movistar]" >> /etc/asterisk/extensions.conf
 	echo "include => internas" >> /etc/asterisk/extensions.conf
+	echo "exten => s,1,Dial(${ring_all_group})" >> /etc/asterisk/extensions.conf
     
     sed -e "s|^include => demo|include => outbound-movistar|" -i /etc/asterisk/extensions.conf
 }
