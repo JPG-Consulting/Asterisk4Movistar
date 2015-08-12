@@ -194,7 +194,7 @@ do_user_add() {
 
 # Wizzard
 
-whiptail --title "Extensiones" --yesno "¿Desea crear algún usuario?" 20 60 2 --defaultyes --yes-button Si --no-button No
+whiptail --title "Extensiones" --yesno "¿Desea crear algún usuario?" 20 60 2 --yes-button Si --no-button No
 if [ $? -eq 0 ]; then
 	while true; do
 		do_user_add
@@ -205,7 +205,7 @@ if [ $? -eq 0 ]; then
 	done
 fi
 
-whiptail --title "Movistar" --yesno "¿Desea configurar una cuenta SIP de Movistar?" 20 60 2 --defaultyes --yes-button Si --no-button No
+whiptail --title "Movistar" --yesno "¿Desea configurar una cuenta SIP de Movistar?" 20 60 2 --yes-button Si --no-button No
 if [ $? -eq 0 ]; then
 	do_movistar_sip_account
 
