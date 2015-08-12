@@ -89,6 +89,7 @@ qualify=no
 trustpid=yes
 EOF
 	
+	# El registro en el servidor SIP de movistar
 	sed -e "s|^;register => 2345:password@sip_proxy/1234|;register => 2345:password@sip_proxy/1234\nregister => ${movistar_phonenumber}@${movistar_domain}:${movistar_phonenumber}@${movistar_outboundproxy}:${movistar_outboundproxy_port}|" -i /etc/asterisk/sip.conf
 
 	# Guardamos el numero
