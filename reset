@@ -1,0 +1,35 @@
+#!/bin/bash
+
+DOWNLOAD_BASE_URL='https://raw.githubusercontent.com/JPG-Consulting/RPiAsterisk4Movistar/develop'
+
+[ -f /etc/network/interfaces ] && rm /etc/network/interfaces
+[ -f /etc/asterisk/asterisk.conf ] && rm /etc/asterisk/asterisk.conf
+[ -f /etc/asterisk/dongle.conf ] && rm /etc/asterisk/dongle.conf
+[ -f /etc/asterisk/extensions.conf ] && rm /etc/asterisk/extensions.conf
+[ -f /etc/asterisk/modules.conf ] && rm /etc/asterisk/modules.conf
+[ -f /etc/asterisk/sip.conf ] && rm /etc/asterisk/sip.conf
+[ -f /etc/asterisk/users.conf ] && rm /etc/asterisk/users.conf
+[ -f /root/setup-asterisk ] && rm /root/setup-asterisk
+
+wget ${DOWNLOAD_BASE_URL}/configs/asterisk.conf -O /etc/asterisk/asterisk.conf
+wget ${DOWNLOAD_BASE_URL}/configs/dongle.conf -O /etc/asterisk/dongle.conf
+wget ${DOWNLOAD_BASE_URL}/configs/extensions.conf -O /etc/asterisk/extensions.conf
+wget ${DOWNLOAD_BASE_URL}/configs/modules.conf -O /etc/asterisk/modules.conf
+wget ${DOWNLOAD_BASE_URL}/configs/sip.conf -O /etc/asterisk/sip.conf
+wget ${DOWNLOAD_BASE_URL}/configs/users.conf -O /etc/asterisk/users.conf
+
+wget --no-cache ${DOWNLOAD_BASE_URL}/setup-asterisk -O /root/setup-asterisk
+chmod +x /root/setup-asterisk
+
+/root/setup-asterisk
+
+
+# Finalizar la configuracion para pruebas
+echo "" >> /etc/asterisk/extensions.conf
+echo "[outbound-movistar]" >> /etc/asterisk/extensions.conf
+echo "exten => _X.,1,Dial(SIP/MovistarOut/\${EXTEN})" >> /etc/asterisk/extensions.conf
+echo "" >> /etc/asterisk/extensions.conf
+echo "[from-movistar]" >> /etc/asterisk/extensions.conf
+echo "exten => s,1,Dial(SIP/6000&SIP/1001)" >> /etc/asterisk/extensions.conf
+
+sed -e "s|^include => demo|include => outbound-movistar|" -i /etc/asterisk/extensions.conf
