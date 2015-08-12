@@ -356,6 +356,7 @@ do_user_add() {
 	# Write
 	echo "" >> /etc/asterisk/users.conf
 	echo "[${CURRENT_USER_EXTENSION_ID}]" >> /etc/asterisk/users.conf
+	echo "host=dynamic" >> /etc/asterisk/users.conf
 	if [ -n "${extension_fullname}" ]; then
         echo "fullname = ${extension_fullname}" >> /etc/asterisk/users.conf
     fi
