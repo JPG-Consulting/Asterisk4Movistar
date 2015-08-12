@@ -153,5 +153,3 @@ whiptail --title "Comtrend VG-8050" --yesno "¿Desea configurar el Comtrend VG-8
 if [ $? -eq 0 ]; then
 	do_comtrend_vg8050_fxs
 fi
-
-do_write_confs
