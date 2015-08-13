@@ -433,6 +433,10 @@ do_movistar_sip_account() {
     if [ $? -ne 0 ]; then
         return 1
     fi
+    	whiptail --title "Movistar VoIP" --yesno "¿Desea activar el buzón de voz?" 20 60 2 --yes-button Si --no-button No
+	if [ $? -eq 0 ]; then
+		sed -e "s|^\[default\]|\[default\]\n${movistar_phonenumber} => ${voicemail_pin},${movistar_phonenumber},${voicemail_email}|" -i /etc/asterisk/voicemail.conf
+	fi
 	
 	cat <<EOF >> /etc/asterisk/sip.conf
 
