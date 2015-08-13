@@ -272,11 +272,11 @@ do_dialplan_setup() {
         echo "exten => sms,n,Hangup()" >> /etc/asterisk/extensions.conf
         
         if [ $ASTERISK_MODULE_CHAN_DONGLE_DISA_ENABLED -eq 1 ]; then
-            if [ -n "${ASTERISK_MODULE_CHAN_DONGLE_DISA_PHONENUMBER}"]; then
+            if [ -n "${ASTERISK_MODULE_CHAN_DONGLE_DISA_PHONENUMBER}" ]; then
                 echo "exten => _.,1,GotoIf(\$[\"\${CALLERID(num)}\" = \"${ASTERISK_MODULE_CHAN_DONGLE_DISA_PHONENUMBER}\"]?500)" >> /etc/asterisk/extensions.conf
             else
                 echo "exten => _.,1,Answer()" >> /etc/asterisk/extensions.conf
-                if [ -n $ASTERISK_MODULE_CHAN_DONGLE_DISA_PIN ]; then
+                if [ -n "$ASTERISK_MODULE_CHAN_DONGLE_DISA_PIN" ]; then
                     echo "exten => _.,2,Authenticate(${ASTERISK_MODULE_CHAN_DONGLE_DISA_PIN})" >> /etc/asterisk/extensions.conf
                     echo "exten => _.,3,Background(vm-enter-num-to-call)" >> /etc/asterisk/extensions.conf
                     echo "exten => _.,4,DISA(no-password, public)" >> /etc/asterisk/extensions.conf
@@ -288,10 +288,10 @@ do_dialplan_setup() {
         echo "exten => _.,11,Dial(${ring_all_group})" >> /etc/asterisk/extensions.conf
         
         if [ $ASTERISK_MODULE_CHAN_DONGLE_DISA_ENABLED -eq 1 ]; then
-            if [ -n "${ASTERISK_MODULE_CHAN_DONGLE_DISA_PHONENUMBER}"]; then
+            if [ -n "${ASTERISK_MODULE_CHAN_DONGLE_DISA_PHONENUMBER}" ]; then
                 echo "exten => _.,499,Hangup()" >> /etc/asterisk/extensions.conf
                 echo "exten => _.,500,Answer()" >> /etc/asterisk/extensions.conf
-                if [ -n $ASTERISK_MODULE_CHAN_DONGLE_DISA_PIN ]; then
+                if [ -n "$ASTERISK_MODULE_CHAN_DONGLE_DISA_PIN" ]; then
                     echo "exten => _.,501,Authenticate(${ASTERISK_MODULE_CHAN_DONGLE_DISA_PIN})" >> /etc/asterisk/extensions.conf
                     echo "exten => _.,502,Background(vm-enter-num-to-call)" >> /etc/asterisk/extensions.conf
                     echo "exten => _.,503,DISA(no-password, public)" >> /etc/asterisk/extensions.conf
