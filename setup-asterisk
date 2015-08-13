@@ -25,7 +25,7 @@ do_chan_dongle()
     local disa_pin=''
     local disa_pin_confirm=''
     
-    gsm_phonenumber=$(whiptail --title "GSM" --inputbox "Introduzca el número de teléfono móvil" 20 60 "+34" 3>&1 1>&2 2>&3)
+    gsm_phonenumber=$(whiptail --title "GSM" --inputbox "Introduzca el número de teléfono móvil" 20 60 "" 3>&1 1>&2 2>&3)
     if [ $? -ne 0 ]; then
         return 1
     fi
@@ -36,7 +36,7 @@ do_chan_dongle()
         
         whiptail --title "GSM" --yesno "¿Desea restringir el uso de DISA a un número telefónico?" 20 60 2 --yes-button Si --no-button No
         if [ $? -eq 0 ]; then
-            ASTERISK_MODULE_CHAN_DONGLE_DISA_PHONENUMBER=$(whiptail --title "DISA" --inputbox "Introduzca el número de teléfono desde el que accederá a DISA" 20 60 "$CURRENT_HOSTNAME" 3>&1 1>&2 2>&3)
+            ASTERISK_MODULE_CHAN_DONGLE_DISA_PHONENUMBER=$(whiptail --title "DISA" --inputbox "Introduzca el número de teléfono desde el que accederá a DISA" 20 60 "" 3>&1 1>&2 2>&3)
             if [ $? -ne 0 ]; then
                 ASTERISK_MODULE_CHAN_DONGLE_DISA_PHONENUMBER=''
             fi
@@ -67,7 +67,7 @@ do_chan_dongle()
     sed -e "s|^context=default|context=from-dongle|" -i /etc/asterisk/dongle.conf
     
     # Guardamos el numero
-	ASTERISK_TRUNK_PHONENUMBERS+=( "${movistar_phonenumber}" )
+	ASTERISK_TRUNK_PHONENUMBERS+=( "${gsm_phonenumber}" )
 	ASTERISK_MODULE_CHAN_DONGLE_ENABLED=1
 }
 
