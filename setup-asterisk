@@ -16,6 +16,9 @@ ASTERISK_MODULE_CHAN_DONGLE_DISA_ENABLED=0
 ASTERISK_MODULE_CHAN_DONGLE_DISA_PIN=''
 ASTERISK_MODULE_CHAN_DONGLE_DISA_PHONENUMBER=''
 
+MOVISTAR_VOICEMAIL_ENABLED=0
+MOVISTAR_PHONENUMBER=''
+
 RASPBERRY_IP_ADDRESS=''
 ASK_TO_REBOOT=0
 ASTERISK_MODULE_CHAN_DONGLE_ENABLED=0
@@ -278,7 +281,21 @@ do_dialplan_setup() {
     echo "" >> /etc/asterisk/extensions.conf
     echo "[from-movistar]" >> /etc/asterisk/extensions.conf
 	echo "include => internas" >> /etc/asterisk/extensions.conf
-	echo "exten => s,1,Dial(${ring_all_group})" >> /etc/asterisk/extensions.conf
+	if [ $MOVISTAR_VOICEMAIL_ENABLED --eq 1 ]; then
+		echo "exten => s,1,Dial(${ring_all_group}, 20)" >> /etc/asterisk/extensions.conf
+		echo "exten => s-NOANSWER,1,Voicemail(${MOVISTAR_PHONENUMBER},u)" >> /etc/asterisk/extensions.conf
+		echo "exten => s-NOANSWER,n,Hangup()" >> /etc/asterisk/extensions.conf
+		echo "" >> /etc/asterisk/extensions.conf
+		echo "exten => s-BUSY,1,Voicemail(${MOVISTAR_PHONENUMBER},b)" >> /etc/asterisk/extensions.conf
+		echo "exten => s-BUSY,n,Hangup()" >> /etc/asterisk/extensions.conf
+		echo "" >> /etc/asterisk/extensions.conf
+		echo "exten => _s-.,1,Goto(s-NOANSWER,1)" >> /etc/asterisk/extensions.conf
+		echo "" >> /etc/asterisk/extensions.conf
+		echo "exten => a,1,VoicemailMain(${MOVISTAR_PHONENUMBER})" >> /etc/asterisk/extensions.conf
+		echo "exten => a,n,Hangup()" >> /etc/asterisk/extensions.conf
+	else
+		echo "exten => s,1,Dial(${ring_all_group})" >> /etc/asterisk/extensions.conf
+	fi
 	
 	# chan_dongle module
 	if [ $ASTERISK_MODULE_CHAN_DONGLE_ENABLED -eq 1 ]; then
@@ -428,14 +445,46 @@ do_movistar_sip_account() {
 	local movistar_outboundproxy='10.31.255.134'
 	local movistar_outboundproxy_port='5070'
 	local movistar_dtmfmode='auto'
+	local voicemail_pin=''
+	local voicemail_pin_confirm=''
+	local voicemail_email=''
 	
 	movistar_phonenumber=$(whiptail --title="Movistar VoIP" --inputbox "Introduzca su número de teléfono fijo" 20 60 "" 3>&1 1>&2 2>&3)
     if [ $? -ne 0 ]; then
         return 1
     fi
+    
     	whiptail --title "Movistar VoIP" --yesno "¿Desea activar el buzón de voz?" 20 60 2 --yes-button Si --no-button No
 	if [ $? -eq 0 ]; then
-		sed -e "s|^\[default\]|\[default\]\n${movistar_phonenumber} => ${voicemail_pin},${movistar_phonenumber},${voicemail_email}|" -i /etc/asterisk/voicemail.conf
+		while true; do
+        		voicemail_pin=$(whiptail --title="Buzón de voz" --passwordbox "Introduzca el PIN del buzón de voz" 20 60 "" 3>&1 1>&2 2>&3)
+        		if [ $? -ne 0 ]; then
+        			voicemail_pin=''
+            			break
+        		fi
+    
+        		voicemail_pin_confirm=$(whiptail --title="Buzón de voz" --passwordbox "Vuelva a introducir el PIN del buzón de voz" 20 60 "" 3>&1 1>&2 2>&3)
+        		if [ $? -ne 0 ]; then
+        			voicemail_pin=''
+            			break
+        		fi
+        
+        		if [ "${voicemail_pin}" = "${voicemail_pin_confirm}" ]; then
+            			break
+        		else
+        			 whiptail --title "Error" --msgbox "Las contraseñas no coinciden." 20 60 2
+        		fi
+    		done
+    		
+    		if [ -n "${voicemail_pin}" ]; then
+    			voicemail_email=$(whiptail --title="Buzón de voz" --inputbox "Introduzca el correo electrónico del buzón de voz" 20 60 "" 3>&1 1>&2 2>&3)
+    			if [ $? -ne 0 ]; then
+        			voicemail_email=''
+    			fi
+			sed -e "s|^\[default\]|\[default\]\n${movistar_phonenumber} => ${voicemail_pin},${movistar_phonenumber},${voicemail_email}|" -i /etc/asterisk/voicemail.conf
+			
+			MOVISTAR_VOICEMAIL_ENABLED=1
+		fi
 	fi
 	
 	cat <<EOF >> /etc/asterisk/sip.conf
@@ -469,6 +518,7 @@ EOF
 	sed -e "s|^;register => 2345:password@sip_proxy/1234|;register => 2345:password@sip_proxy/1234\nregister => ${movistar_phonenumber}@${movistar_domain}:${movistar_phonenumber}@${movistar_outboundproxy}:${movistar_outboundproxy_port}|" -i /etc/asterisk/sip.conf
 
 	# Guardamos el numero
+	MOVISTAR_PHONENUMBER="${movistar_phonenumber}"
 	ASTERISK_TRUNK_PHONENUMBERS+=( "${movistar_phonenumber}" )
 	
 	# Guardamos los trunks
@@ -522,7 +572,7 @@ do_user_add() {
         fi
         
         if [ "${extension_password}" = "${extension_password_confirm}" ]; then
-            break;
+            break
         else
             whiptail --title "Error" --msgbox "Las contraseñas no coinciden." 20 60 2
         fi
