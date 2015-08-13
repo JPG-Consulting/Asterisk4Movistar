@@ -16,6 +16,7 @@ ASTERISK_MODULE_CHAN_DONGLE_DISA_ENABLED=0
 ASTERISK_MODULE_CHAN_DONGLE_DISA_PIN=''
 ASTERISK_MODULE_CHAN_DONGLE_DISA_PHONENUMBER=''
 
+ASTERISK_EXTERNAL_VOICEMAIL_TIMEOUT=20
 MOVISTAR_VOICEMAIL_ENABLED=0
 MOVISTAR_PHONENUMBER=''
 
@@ -282,7 +283,7 @@ do_dialplan_setup() {
     echo "[from-movistar]" >> /etc/asterisk/extensions.conf
 	echo "include => internas" >> /etc/asterisk/extensions.conf
 	if [ $MOVISTAR_VOICEMAIL_ENABLED --eq 1 ]; then
-		echo "exten => s,1,Dial(${ring_all_group}, 20)" >> /etc/asterisk/extensions.conf
+		echo "exten => s,1,Dial(${ring_all_group}, ${ASTERISK_EXTERNAL_VOICEMAIL_TIMEOUT})" >> /etc/asterisk/extensions.conf
 		echo "exten => s-NOANSWER,1,Voicemail(${MOVISTAR_PHONENUMBER},u)" >> /etc/asterisk/extensions.conf
 		echo "exten => s-NOANSWER,n,Hangup()" >> /etc/asterisk/extensions.conf
 		echo "" >> /etc/asterisk/extensions.conf
@@ -481,6 +482,7 @@ do_movistar_sip_account() {
     			if [ $? -ne 0 ]; then
         			voicemail_email=''
     			fi
+    			
 			sed -e "s|^\[default\]|\[default\]\n${movistar_phonenumber} => ${voicemail_pin},${movistar_phonenumber},${voicemail_email}|" -i /etc/asterisk/voicemail.conf
 			
 			MOVISTAR_VOICEMAIL_ENABLED=1
