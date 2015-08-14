@@ -604,10 +604,10 @@ fi
 
 if [[ \$VM_COUNT = "0" ]]; then
     logger -t groupmwi "Switching OFF Group mailbox message"
-    \$ASTCMD "originate Local/s@groupmwi-off extension 4@default"
+    \$ASTCMD "originate Local/s@groupmwi-off extension ${voicemail_extension}@default"
 else
     logger -t groupmwi "Switching ON Group mailbox message"
-    \$ASTCMD "originate Local/s@groupmwi-on extension 4@default"
+    \$ASTCMD "originate Local/s@groupmwi-on extension ${voicemail_extension}@default"
 fi
 
 exit 0
