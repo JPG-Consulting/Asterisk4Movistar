@@ -30,7 +30,7 @@ do_package_config() {
         cp ${file} /usr/src/certified-asterisk-config-${ASTERISK_VERSION}${dst}
     done
 
-    cat <<EOF > /usr/src/certified-asterisk-{ASTERISK_VERSION}/DEBIAN/control
+    cat <<EOF > /usr/src/certified-asterisk-config-${ASTERISK_VERSION}/DEBIAN/control
 Package: certified-asterisk-config
 Source: asterisk
 Version: ${ASTERISK_VERSION}
