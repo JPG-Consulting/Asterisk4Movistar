@@ -36,14 +36,14 @@ Maintainer: ${DEBIAN_MAINTAINER}
 Section: comm
 Priority: extra
 Homepage: http://www.voipnovatos.es/
-Description: asterisk PBX sound files - en-us/g729
+Description: asterisk PBX sound files - es-es/alaw
  Asterisk is an Open Source PBX and telephony toolkit. It is, in a 
  sense, middleware between Internet and telephony channels on the 
  bottom, and Internet and telephony applications at the top.
  .
  Asterisk includes a set of standard sound files in various formats. 
  This package contains the core part of that collection in Spanish 
- (ES, by Alberto Sagredo Castro) in raw G.729 format.
+ (ES, by Alberto Sagredo Castro) in raw G.711 A-law format.
 EOF
 
     cd /usr/src
@@ -65,7 +65,7 @@ Maintainer: ${DEBIAN_MAINTAINER}
 Section: comm
 Priority: extra
 Homepage: http://www.voipnovatos.es/
-Description: asterisk PBX sound files - en-us/g729
+Description: asterisk PBX sound files - es-es/g729
  Asterisk is an Open Source PBX and telephony toolkit. It is, in a 
  sense, middleware between Internet and telephony channels on the 
  bottom, and Internet and telephony applications at the top.
@@ -94,14 +94,15 @@ Maintainer: ${DEBIAN_MAINTAINER}
 Section: comm
 Priority: extra
 Homepage: http://www.voipnovatos.es/
-Description: asterisk PBX sound files - en-us/g729
+Description: asterisk PBX sound files - es-es/gsm
  Asterisk is an Open Source PBX and telephony toolkit. It is, in a 
  sense, middleware between Internet and telephony channels on the 
  bottom, and Internet and telephony applications at the top.
  .
  Asterisk includes a set of standard sound files in various formats. 
  This package contains the core part of that collection in Spanish 
- (ES, by Alberto Sagredo Castro) in raw G.729 format.
+ (ES, by Alberto Sagredo Castro) in raw gsm-fr format (Compressed. 
+ Takes relatively little space. playable with sox).
 EOF
 
     cd /usr/src
@@ -123,14 +124,14 @@ Maintainer: ${DEBIAN_MAINTAINER}
 Section: comm
 Priority: extra
 Homepage: http://www.voipnovatos.es/
-Description: asterisk PBX sound files - en-us/g729
+Description: asterisk PBX sound files - es-es/ulaw
  Asterisk is an Open Source PBX and telephony toolkit. It is, in a 
  sense, middleware between Internet and telephony channels on the 
  bottom, and Internet and telephony applications at the top.
  .
  Asterisk includes a set of standard sound files in various formats. 
  This package contains the core part of that collection in Spanish 
- (ES, by Alberto Sagredo Castro) in raw G.729 format.
+ (ES, by Alberto Sagredo Castro) in raw G.711 u-law format.
 EOF
 
     cd /usr/src
