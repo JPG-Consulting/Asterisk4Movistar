@@ -148,7 +148,117 @@ EOF
     rm -rf /usr/src/${package_name}-${DEBIAN_VERSION}
 }
 
+do_package_extra_sounds_es_alaw() {
+    local package_name="voipnovatos-extra-sounds-es-alaw"
+    
+    # Create the directory structure
+    do_create_directories ${package_name}
+    
+    # Create the control file
+    cat << EOF > /usr/src/${package_name}-${DEBIAN_VERSION}/DEBIAN/control
+Package: ${package_name}
+Version: ${DEBIAN_VERSION}
+Architecture: all
+Maintainer: ${DEBIAN_MAINTAINER}
+Section: comm
+Priority: extra
+Homepage: http://www.voipnovatos.es/
+Description: Additional sound files for the Asterisk PBX - es-es/alaw
+ Extra sound files for use with the Asterisk PBX, including many city 
+ names, phases and words.
+EOF
+
+    cd /usr/src
+    dpkg-deb --build ${package_name}-${DEBIAN_VERSION}/
+    
+    rm -rf /usr/src/${package_name}-${DEBIAN_VERSION}
+}
+
+do_package_extra_sounds_es_g729() {
+    local package_name="voipnovatos-extra-sounds-es-g729"
+    
+    # Create the directory structure
+    do_create_directories ${package_name}
+    
+    # Create the control file
+    cat << EOF > /usr/src/${package_name}-${DEBIAN_VERSION}/DEBIAN/control
+Package: ${package_name}
+Version: ${DEBIAN_VERSION}
+Architecture: all
+Maintainer: ${DEBIAN_MAINTAINER}
+Section: comm
+Priority: extra
+Homepage: http://www.voipnovatos.es/
+Description: Additional sound files for the Asterisk PBX - es-es/g729
+ Extra sound files for use with the Asterisk PBX, including many city 
+ names, phases and words.
+EOF
+
+    cd /usr/src
+    dpkg-deb --build ${package_name}-${DEBIAN_VERSION}/
+    
+    rm -rf /usr/src/${package_name}-${DEBIAN_VERSION}
+}
+
+do_package_extra_sounds_es_gsm() {
+    local package_name="voipnovatos-extra-sounds-es-gsm"
+    
+    # Create the directory structure
+    do_create_directories ${package_name}
+    
+    # Create the control file
+    cat << EOF > /usr/src/${package_name}-${DEBIAN_VERSION}/DEBIAN/control
+Package: ${package_name}
+Version: ${DEBIAN_VERSION}
+Architecture: all
+Maintainer: ${DEBIAN_MAINTAINER}
+Section: comm
+Priority: extra
+Homepage: http://www.voipnovatos.es/
+Description: Additional sound files for the Asterisk PBX - es-es/gsm
+ Extra sound files for use with the Asterisk PBX, including many city 
+ names, phases and words.
+EOF
+
+    cd /usr/src
+    dpkg-deb --build ${package_name}-${DEBIAN_VERSION}/
+    
+    rm -rf /usr/src/${package_name}-${DEBIAN_VERSION}
+}
+
+do_package_extra_sounds_es_ulaw() {
+    local package_name="voipnovatos-extra-sounds-es-ulaw"
+    
+    # Create the directory structure
+    do_create_directories ${package_name}
+    
+    # Create the control file
+    cat << EOF > /usr/src/${package_name}-${DEBIAN_VERSION}/DEBIAN/control
+Package: ${package_name}
+Version: ${DEBIAN_VERSION}
+Architecture: all
+Maintainer: ${DEBIAN_MAINTAINER}
+Section: comm
+Priority: extra
+Homepage: http://www.voipnovatos.es/
+Description: Additional sound files for the Asterisk PBX - es-es/ulaw
+ Extra sound files for use with the Asterisk PBX, including many city 
+ names, phases and words.
+EOF
+
+    cd /usr/src
+    dpkg-deb --build ${package_name}-${DEBIAN_VERSION}/
+    
+    rm -rf /usr/src/${package_name}-${DEBIAN_VERSION}
+}
+
+
 do_package_core_sounds_es_g729
 do_package_core_sounds_es_alaw
 do_package_core_sounds_es_gsm
 do_package_core_sounds_es_ulaw
+
+do_package_extra_sounds_es_g729
+do_package_extra_sounds_es_alaw
+do_package_extra_sounds_es_gsm
+do_package_extra_sounds_es_ulaw
