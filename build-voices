@@ -19,7 +19,13 @@ do_download_voices() {
         wget ${BASE_URL}/${voice_file} -O /usr/src/${voice_file}
     done
 
-    wget ${BASE_URL}/licenciadeuso.txt
+    wget ${BASE_URL}/licenciadeuso.txt -O /usr/src/licenciadeuso.txt
+    
+    cd /usr/src
+    
+    for voice_file in "${VOICE_FILES[@]}"; do
+        tar -zxf /usr/src/${voice_file}
+    done
 }
 
 do_download_voices
