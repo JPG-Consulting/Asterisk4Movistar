@@ -1,0 +1,25 @@
+#!/bin/bash
+
+BASE_URL="https://www.voipnovatos.es/voces"
+
+declare -a VOICE_FILES=( \
+    'voipnovatos-extra-sounds-es-alaw-1.4.tar.gz' \
+    'voipnovatos-extra-sounds-es-g729-1.4.tar.gz' \
+    'asterisk-voces-es-v1_2-moh-voipnovatos.tar.gz' \
+    'voipnovatos-extra-sounds-es-ulaw-1.4.tar.gz' \
+    'voipnovatos-extra-sounds-es-gsm-1.4.tar.gz' \
+    'voipnovatos-core-sounds-es-g729-1.4.tar.gz' \
+    'voipnovatos-core-sounds-es-alaw-1.4.tar.gz' \
+    'voipnovatos-core-sounds-es-gsm-1.4.tar.gz' \
+    'voipnovatos-core-sounds-es-ulaw-1.4.tar.gz' \
+)
+
+do_download_voices() {
+    for voice_file in "${VOICE_FILES[@]}"; do
+        wget ${BASE_URL}/${voice_file} -O /usr/src/${voice_file}
+    done
+
+    wget ${BASE_URL)/licenciadeuso.txt
+}
+
+do_download_voices
