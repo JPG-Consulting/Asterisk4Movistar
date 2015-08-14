@@ -10,6 +10,8 @@ DEBIAN_MAINTAINER="Juan Pedro Gonzalez <opensource@jpg-consulting.com>"
 do_create_directories() {
     local package_name=$1
     
+    [ -d /usr/src/${package_name}-${DEBIAN_VERSION} ] && rm -rf /usr/src/${package_name}-${DEBIAN_VERSION}
+    
     mkdir -p /usr/src/${package_name}-${DEBIAN_VERSION}
     mkdir -p /usr/src/${package_name}-${DEBIAN_VERSION}/DEBIAN
     mkdir -p /usr/src/${package_name}-${DEBIAN_VERSION}${ASTERISK_SOUNDS_DIR}
