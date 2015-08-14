@@ -46,7 +46,7 @@ Description: asterisk PBX sound files - en-us/g729
 EOF
 
     cd /usr/src
-    dpkg-deb –build ${package_name}-${DEBIAN_VERSION}
+    dpkg-deb --build ${package_name}-${DEBIAN_VERSION}/
 }
 
 do_package_core_sounds_es_g729
