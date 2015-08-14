@@ -585,7 +585,7 @@ do_shared_voicemail() {
     sed -e "s|^\[default\]|\[default\]\n${voicemail_extension} => ${voicemail_pin},Buzón de voz compartido,${voicemail_email}|" -i /etc/asterisk/voicemail.conf
 
     # Create the script runned by externnotify
-    cat <<EOF > /usr/bin/groupmwi
+    cat <<EOF > /usr/local/bin/groupwmi
 #!/bin/sh
 #
 # Control script to change the status of a custom device state in Asterisk
@@ -611,8 +611,8 @@ fi
 
 exit 0
 EOF
-    chmod +x /usr/bin/groupwmi
-    chmod 755 /usr/bin/groupmwi
+    chmod +x /usr/local/bin/groupwmi
+    chmod 755 /usr/local/bin/groupwmi
 
     # Establecer las variables globales
     ASTERISK_SHARED_VOICEMAIL_ENABLED=1
@@ -730,7 +730,7 @@ if [ $? -eq 0 ]; then
     do_shared_voicemail
     ASTERISK_SHARED_VOICEMAIL_ENABLED=1
 else
-    [ -f /usr/bin/groupwmi ] && rm /usr/bin/groupwmi
+    [ -f /usr/local/bin/groupwmi ] && rm /usr/local/bin/groupwmi
 fi
 
 whiptail --title "Extensiones" --yesno "¿Desea crear algún usuario?" 20 60 2 --yes-button Si --no-button No
