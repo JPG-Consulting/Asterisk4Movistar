@@ -127,6 +127,7 @@ EOF
 
 do_dialplan_setup() {
     local ring_all_group=''
+    local user_voicemail_extensions=''
 
     if [ -n "${COMTREND_VG8050_EXTENSION}" ]; then
         ring_all_group="SIP/${COMTREND_VG8050_EXTENSION}"
@@ -137,6 +138,19 @@ do_dialplan_setup() {
             ring_all_group="${ring_all_group}&SIP/${extension_id}"
         else
             ring_all_group="SIP/${extension_id}"
+        fi
+    done
+
+    # Voice mails
+    if [ $ASTERISK_SHARED_VOICEMAIL_ENABLED --eq 1 ]; then
+        user_voicemail_extensions="${ASTERISK_SHARED_VOICEMAIL_EXTENSION}"
+    fi
+
+    for extension_id in "${ASTERISK_USER_VOICEMAIL_EXTENSIONS[@]}"; do
+        if [ -n "${user_voicemail_extensions}" ]; then
+            user_voicemail_extensions="${user_voicemail_extensions}&${extension_id}"
+        else
+            user_voicemail_extensions="${extension_id}"
         fi
     done
 
@@ -312,10 +326,10 @@ do_dialplan_setup() {
         echo "exten => s,1,Dial(${ring_all_group}, ${ASTERISK_SHARED_VOICEMAIL_TIMEOUT})" >> /etc/asterisk/extensions.conf
         echo "exten => s,n,Goto(s-\${DIALSTATUS},1)" >> /etc/asterisk/extensions.conf
         echo "" >> /etc/asterisk/extensions.conf
-        echo "exten => s-NOANSWER,1,Voicemail(${ASTERISK_SHARED_VOICEMAIL_EXTENSION},u)" >> /etc/asterisk/extensions.conf
+        echo "exten => s-NOANSWER,1,Voicemail(${user_voicemail_extensions},u)" >> /etc/asterisk/extensions.conf
         echo "exten => s-NOANSWER,n,Hangup()" >> /etc/asterisk/extensions.conf
         echo "" >> /etc/asterisk/extensions.conf
-        echo "exten => s-BUSY,1,Voicemail(${ASTERISK_SHARED_VOICEMAIL_EXTENSION},b)" >> /etc/asterisk/extensions.conf
+        echo "exten => s-BUSY,1,Voicemail(${user_voicemail_extensions},b)" >> /etc/asterisk/extensions.conf
         echo "exten => s-BUSY,n,Hangup()" >> /etc/asterisk/extensions.conf
         echo "" >> /etc/asterisk/extensions.conf
         echo "exten => _s-.,1,Goto(s-NOANSWER,1)" >> /etc/asterisk/extensions.conf
