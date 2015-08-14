@@ -3,32 +3,50 @@
 BASE_URL="https://www.voipnovatos.es/voces"
 ASTERISK_SOUNDS_DIR="/var/lib/asterisk/sounds"
 
-VOICE_VERSION='1.4'
-
-declare -a VOICE_FILES=( \
-    'voipnovatos-extra-sounds-es-alaw' \
-    'voipnovatos-extra-sounds-es-g729' \
-    'voipnovatos-extra-sounds-es-ulaw' \
-    'voipnovatos-extra-sounds-es-gsm' \
-    'voipnovatos-core-sounds-es-g729' \
-    'voipnovatos-core-sounds-es-alaw' \
-    'voipnovatos-core-sounds-es-gsm' \
-    'voipnovatos-core-sounds-es-ulaw' \
-)
+DOWNLOAD_VERSION='1.4'
+DEBIAN_VERSION='1.4.22-1'
 
 do_create_directories() {
-    for voice_file in "${VOICE_FILES[@]}"; do
-        mkdir -p /usr/src/${voice_file}-${VOICE_VERSION}
-        mkdir -p /usr/src/${voice_file}-${VOICE_VERSION}/DEBIAN
-        mkdir -p /usr/src/${voice_file}-${VOICE_VERSION}${ASTERISK_SOUNDS_DIR}
-        
-        touch /usr/src/${voice_file}-${VOICE_VERSION}/DEBIAN/control
-        
-        wget ${BASE_URL}/${voice_file}-${VOICE_VERSION}.tar.gz -O /usr/src/${voice_file}-${VOICE_VERSION}${ASTERISK_SOUNDS_DIR}/${voice_file}-${VOICE_VERSION}.tar.gz --no-check-certificate --no-cache
-        cd /usr/src/${voice_file}-${VOICE_VERSION}${ASTERISK_SOUNDS_DIR}
-        tar -zxf /usr/src/${voice_file}-${VOICE_VERSION}${ASTERISK_SOUNDS_DIR}/${voice_file}-${VOICE_VERSION}.tar.gz
-        rm /usr/src/${voice_file}-${VOICE_VERSION}${ASTERISK_SOUNDS_DIR}/${voice_file}-${VOICE_VERSION}.tar.gz
-    done
+    local package_name=$1
+    
+    mkdir -p /usr/src/${package_name}-${DEBIAN_VERSION}
+    mkdir -p /usr/src/${package_name}-${DEBIAN_VERSION}/DEBIAN
+    mkdir -p /usr/src/${package_name}-${DEBIAN_VERSION}${ASTERISK_SOUNDS_DIR}
+    
+    # Download and extract the sounds
+    wget ${BASE_URL}/${package_name}-${DOWNLOAD_VERSION}.tar.gz -O /usr/src/${package_name}-${DEBIAN_VERSION}${ASTERISK_SOUNDS_DIR}/${package_name}-${DEBIAN_VERSION}.tar.gz --no-check-certificate --no-cache
+    cd /usr/src/${package_name}-${DEBIAN_VERSION}${ASTERISK_SOUNDS_DIR}
+    tar -zxf /usr/src/${package_name}-${DEBIAN_VERSION}${ASTERISK_SOUNDS_DIR}/${package_name}-${DEBIAN_VERSION}.tar.gz
+    rm /usr/src/${package_name}-${DEBIAN_VERSION}${ASTERISK_SOUNDS_DIR}/${package_name}-${DEBIAN_VERSION}.tar.gz
 }
 
-do_create_directories
+do_package_core_sounds_es_g729() {
+    local package_name="voipnovatos-core-sounds-es-g729"
+    
+    # Create the directory structure
+    do_create_directories ${package_name}
+    
+    # Create the control file
+    cat << EOF > /usr/src/${package_name}-${DEBIAN_VERSION}/DEBIAN/control
+Package: ${package_name}
+Version: ${DEBIAN_VERSION}
+Architecture: all
+Maintainer: Juan Pedro Gonzalez <unaputacuenta@hotmail.com>
+Section: comm
+Priority: extra
+Homepage: http://www.voipnovatos.es/
+Description: asterisk PBX sound files - en-us/g729
+ Asterisk is an Open Source PBX and telephony toolkit. It is, in a 
+ sense, middleware between Internet and telephony channels on the 
+ bottom, and Internet and telephony applications at the top.
+ .
+ Asterisk includes a set of standard sound files in various formats. 
+ This package contains the core part of that collection in Spanish 
+ (ES, by Alberto Sagredo Castro) in raw G.729 format.
+EOF
+
+    cd /usr/src
+    dpkg-deb –build ${package_name}-${DEBIAN_VERSION}
+}
+
+do_package_core_sounds_es_g729
