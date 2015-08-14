@@ -666,7 +666,12 @@ do_user_add() {
         echo "hasvoicemail = yes" >> /etc/asterisk/users.conf
 		echo "vmsecret = ${extension_vmsecret}" >> /etc/asterisk/users.conf
     fi
-	
+
+    if [ $ASTERISK_SHARED_VOICEMAIL_ENABLED -eq 1 ];then
+        [ ! -d /var/spool/asterisk/voicemail/default/${ASTERISK_SHARED_VOICEMAIL_EXTENSION} ] && mkdir -p /var/spool/asterisk/voicemail/default/${ASTERISK_SHARED_VOICEMAIL_EXTENSION}
+        ln -s /var/spool/asterisk/voicemail/default/${ASTERISK_SHARED_VOICEMAIL_EXTENSION} /var/spool/asterisk/voicemail/default/${CURRENT_USER_EXTENSION_ID}
+    fi
+    
 	ASTERISK_USER_EXTENSIONS+=( "${CURRENT_USER_EXTENSION_ID}" )
 	((CURRENT_USER_EXTENSION_ID=CURRENT_USER_EXTENSION_ID+1))
 }
