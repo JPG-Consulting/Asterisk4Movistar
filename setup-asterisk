@@ -4,6 +4,7 @@ CURRENT_USER_EXTENSION_ID=6000
 ASTERISK_DIALPLAN_USERS=6XXX
 
 ASTERISK_USER_EXTENSIONS=()
+ASTERISK_USER_VOICEMAIL_EXTENSIONS=()
 ASTERISK_TRUNK_PHONENUMBERS=()
 
 ASTERISK_TRUNK_MOVISTAR_FTTH_OUT=''
@@ -71,25 +72,25 @@ do_chan_dongle()
     sed -e "s|^context=default|context=from-dongle|" -i /etc/asterisk/dongle.conf
     
     # Guardamos el numero
-	ASTERISK_TRUNK_PHONENUMBERS+=( "${gsm_phonenumber}" )
-	ASTERISK_MODULE_CHAN_DONGLE_ENABLED=1
+    ASTERISK_TRUNK_PHONENUMBERS+=( "${gsm_phonenumber}" )
+    ASTERISK_MODULE_CHAN_DONGLE_ENABLED=1
 }
 
 do_comtrend_vg8050_fxs() {
-	# Envía los invites a 192.168.1.3
-	dhcp_ip_address=$(ifconfig eth0 | grep -w inet |grep -v 127.0.0.1| awk '{print $2}' | cut -d ":" -f 2)
-	dhcp_bcast_address=$(ifconfig eth0 | grep -w inet |grep -v 127.0.0.1| awk '{print $3}' | cut -d ":" -f 2)
-	dhcp_netmask=$(ifconfig eth0 | grep -w inet |grep -v 127.0.0.1| awk '{print $4}' | cut -d ":" -f 2)
-	dhcp_gateway=$(ip route | awk '/default/ { print $3 }')
+    # Envía los invites a 192.168.1.3
+    dhcp_ip_address=$(ifconfig eth0 | grep -w inet |grep -v 127.0.0.1| awk '{print $2}' | cut -d ":" -f 2)
+    dhcp_bcast_address=$(ifconfig eth0 | grep -w inet |grep -v 127.0.0.1| awk '{print $3}' | cut -d ":" -f 2)
+    dhcp_netmask=$(ifconfig eth0 | grep -w inet |grep -v 127.0.0.1| awk '{print $4}' | cut -d ":" -f 2)
+    dhcp_gateway=$(ip route | awk '/default/ { print $3 }')
+
+    IFS=. read -r i1 i2 i3 i4 <<< "${dhcp_ip_address}"
+    IFS=. read -r m1 m2 m3 m4 <<< "${dhcp_netmask}"
+    dhcp_network=$(printf "%d.%d.%d.%d\n" "$((i1 & m1))" "$((i2 & m2))" "$((i3 & m3))" "$((i4 & m4))")
+    RASPBERRY_IP_ADDRESS=$(echo ${dhcp_network} | awk -F. '$4=3' OFS=".")
 	
-	IFS=. read -r i1 i2 i3 i4 <<< "${dhcp_ip_address}"
-	IFS=. read -r m1 m2 m3 m4 <<< "${dhcp_netmask}"
-	dhcp_network=$(printf "%d.%d.%d.%d\n" "$((i1 & m1))" "$((i2 & m2))" "$((i3 & m3))" "$((i4 & m4))")
-	RASPBERRY_IP_ADDRESS=$(echo ${dhcp_network} | awk -F. '$4=3' OFS=".")
-	
-	whiptail --title "Comtrend VG-8050" --yesno "Para que funcione el puerto FXS del Comtrend VG-8050 necesitamos configurar la dirección IP del Asterisk como ${RASPBERRY_IP_ADDRESS}.\n\n¿Desea continuar?" 20 60 2
+    whiptail --title "Comtrend VG-8050" --yesno "Para que funcione el puerto FXS del Comtrend VG-8050 necesitamos configurar la dirección IP del Asterisk como ${RASPBERRY_IP_ADDRESS}.\n\n¿Desea continuar?" 20 60 2
     if [ $? -eq 0 ]; then # yes
-		cat <<EOF > /etc/network/interfaces
+        cat <<EOF > /etc/network/interfaces
 auto lo
 iface lo inet loopback
 
@@ -101,7 +102,7 @@ iface eth0 inet static
 	gateway ${dhcp_gateway}
 EOF
 
-		cat <<EOF >> /etc/asterisk/sip.conf
+        cat <<EOF >> /etc/asterisk/sip.conf
 
 [1001]
 type=peer
@@ -120,8 +121,8 @@ EOF
             ln -s /var/spool/asterisk/voicemail/default/${ASTERISK_SHARED_VOICEMAIL_EXTENSION} /var/spool/asterisk/voicemail/default/1001
         fi
         
-		COMTREND_VG8050_EXTENSION=1001
-	fi
+        COMTREND_VG8050_EXTENSION=1001
+    fi
 }
 
 do_dialplan_setup() {
@@ -306,27 +307,27 @@ do_dialplan_setup() {
     
     echo "" >> /etc/asterisk/extensions.conf
     echo "[from-movistar]" >> /etc/asterisk/extensions.conf
-	echo "include => internas" >> /etc/asterisk/extensions.conf
-	if [ $ASTERISK_SHARED_VOICEMAIL_ENABLED --eq 1 ]; then
-		echo "exten => s,1,Dial(${ring_all_group}, ${ASTERISK_SHARED_VOICEMAIL_TIMEOUT})" >> /etc/asterisk/extensions.conf
+    echo "include => internas" >> /etc/asterisk/extensions.conf
+    if [ $ASTERISK_SHARED_VOICEMAIL_ENABLED --eq 1 ]; then
+        echo "exten => s,1,Dial(${ring_all_group}, ${ASTERISK_SHARED_VOICEMAIL_TIMEOUT})" >> /etc/asterisk/extensions.conf
         echo "exten => s,n,Goto(s-\${DIALSTATUS},1)" >> /etc/asterisk/extensions.conf
         echo "" >> /etc/asterisk/extensions.conf
-		echo "exten => s-NOANSWER,1,Voicemail(${ASTERISK_SHARED_VOICEMAIL_EXTENSION},u)" >> /etc/asterisk/extensions.conf
-		echo "exten => s-NOANSWER,n,Hangup()" >> /etc/asterisk/extensions.conf
-		echo "" >> /etc/asterisk/extensions.conf
-		echo "exten => s-BUSY,1,Voicemail(${ASTERISK_SHARED_VOICEMAIL_EXTENSION},b)" >> /etc/asterisk/extensions.conf
-		echo "exten => s-BUSY,n,Hangup()" >> /etc/asterisk/extensions.conf
-		echo "" >> /etc/asterisk/extensions.conf
-		echo "exten => _s-.,1,Goto(s-NOANSWER,1)" >> /etc/asterisk/extensions.conf
-		echo "" >> /etc/asterisk/extensions.conf
-		echo "exten => a,1,VoicemailMain(${ASTERISK_SHARED_VOICEMAIL_EXTENSION})" >> /etc/asterisk/extensions.conf
-		echo "exten => a,n,Hangup()" >> /etc/asterisk/extensions.conf
-	else
-		echo "exten => s,1,Dial(${ring_all_group})" >> /etc/asterisk/extensions.conf
-	fi
+        echo "exten => s-NOANSWER,1,Voicemail(${ASTERISK_SHARED_VOICEMAIL_EXTENSION},u)" >> /etc/asterisk/extensions.conf
+        echo "exten => s-NOANSWER,n,Hangup()" >> /etc/asterisk/extensions.conf
+        echo "" >> /etc/asterisk/extensions.conf
+        echo "exten => s-BUSY,1,Voicemail(${ASTERISK_SHARED_VOICEMAIL_EXTENSION},b)" >> /etc/asterisk/extensions.conf
+        echo "exten => s-BUSY,n,Hangup()" >> /etc/asterisk/extensions.conf
+        echo "" >> /etc/asterisk/extensions.conf
+        echo "exten => _s-.,1,Goto(s-NOANSWER,1)" >> /etc/asterisk/extensions.conf
+        echo "" >> /etc/asterisk/extensions.conf
+        echo "exten => a,1,VoicemailMain(${ASTERISK_SHARED_VOICEMAIL_EXTENSION})" >> /etc/asterisk/extensions.conf
+        echo "exten => a,n,Hangup()" >> /etc/asterisk/extensions.conf
+    else
+        echo "exten => s,1,Dial(${ring_all_group})" >> /etc/asterisk/extensions.conf
+    fi
 	
-	# chan_dongle module
-	if [ $ASTERISK_MODULE_CHAN_DONGLE_ENABLED -eq 1 ]; then
+    # chan_dongle module
+    if [ $ASTERISK_MODULE_CHAN_DONGLE_ENABLED -eq 1 ]; then
         echo "" >> /etc/asterisk/extensions.conf
         echo "[from-dongle]" >> /etc/asterisk/extensions.conf
         echo "exten => sms,1,Verbose(Incoming SMS from \${CALLERID(num)} \${BASE64_DECODE(\${SMS_BASE64})})" >> /etc/asterisk/extensions.conf
@@ -590,103 +591,105 @@ do_shared_voicemail() {
 }
 
 do_user_add() {
-	local extension_fullname=''
-	local extension_email=''
-	local extension_password=''
-	local extension_password_confirm=''
-	local extension_vmsecret=''
-	local extension_vmsecret_confirm=''
-	
-	local whiptail_title="Nueva extensión: ${CURRENT_USER_EXTENSION_ID}"
-	
+    local extension_fullname=''
+    local extension_email=''
+    local extension_password=''
+    local extension_password_confirm=''
+    local extension_vmsecret=''
+    local extension_vmsecret_confirm=''
+
+    local whiptail_title="Nueva extensión: ${CURRENT_USER_EXTENSION_ID}"
+
     while true; do
         extension_password=$(whiptail --title="${whiptail_title}" --passwordbox "Introduzca la contraseña de la extensión" 20 60 "" 3>&1 1>&2 2>&3)
         if [ $? -ne 0 ]; then
             return 1
         fi
-    
+
         extension_password_confirm=$(whiptail --title="${whiptail_title}" --passwordbox "Vuelva a introducir la contraseña de la extensión" 20 60 "" 3>&1 1>&2 2>&3)
         if [ $? -ne 0 ]; then
             return 1
         fi
-        
+
         if [ "${extension_password}" = "${extension_password_confirm}" ]; then
             break
         else
             whiptail --title "Error" --msgbox "Las contraseñas no coinciden." 20 60 2
         fi
     done
-	
-	extension_fullname=$(whiptail --title="${whiptail_title}" --inputbox "Introduzca el nombre completo del usuario" 20 60 "" 3>&1 1>&2 2>&3)
+
+    extension_fullname=$(whiptail --title="${whiptail_title}" --inputbox "Introduzca el nombre completo del usuario" 20 60 "" 3>&1 1>&2 2>&3)
     if [ $? -ne 0 ]; then
         extension_fullname=''
     fi
 	
-	extension_email=$(whiptail --title="${whiptail_title}" --inputbox "Introduzca el correo electrónico del usuario" 20 60 "" 3>&1 1>&2 2>&3)
+    extension_email=$(whiptail --title="${whiptail_title}" --inputbox "Introduzca el correo electrónico del usuario" 20 60 "" 3>&1 1>&2 2>&3)
     if [ $? -ne 0 ]; then
         extension_email=''
     fi
 	
-	if [ $ASTERISK_SHARED_VOICEMAIL_ENABLED -eq 0 ]; then
-	    whiptail --title="${whiptail_title}" --yesno "¿Desea activar el buzón de voz para ésta extensión?" 20 60 2 --defaultno
-        if [ $? -eq 0 ]; then # yes
-		    while true; do
-			    extension_vmsecret=$(whiptail --title="${whiptail_title}" --passwordbox "Introduzca el código PIN para el buzón de voz" 20 60 "" 3>&1 1>&2 2>&3)
-			    if [ $? -ne 0 ]; then
-				    whiptail --title="${whiptail_title}" --yesno "¿Desea activar el buzón de voz para ésta extensión?" 20 60 2
-				    if [ $? -eq 0 ]; then # yes
-					    continue
-				    else
-					    break
-				    fi
-			    fi
+    whiptail --title="${whiptail_title}" --yesno "¿Desea activar el buzón de voz para ésta extensión?" 20 60 2 --defaultno
+    if [ $? -eq 0 ]; then # yes
+        while true; do
+            extension_vmsecret=$(whiptail --title="${whiptail_title}" --passwordbox "Introduzca el código PIN para el buzón de voz" 20 60 "" 3>&1 1>&2 2>&3)
+            if [ $? -ne 0 ]; then
+                whiptail --title="${whiptail_title}" --yesno "¿Desea activar el buzón de voz para ésta extensión?" 20 60 2
+                if [ $? -eq 0 ]; then # yes
+                    continue
+                else
+                    break
+                fi
+            fi
     
-			    extension_vmsecret_confirm=$(whiptail --title="${whiptail_title}" --passwordbox "Vuelva a introducir el código PIN para el buzón de voz" 20 60 "" 3>&1 1>&2 2>&3)
-			    if [ $? -ne 0 ]; then
-				    extension_vmsecret=''
-				    whiptail --title="${whiptail_title}" --yesno "¿Desea activar el buzón de voz para ésta extensión?" 20 60 2
-				    if [ $? -eq 0 ]; then # yes
-					    continue
-				    else
-					    break
-				    fi
-			    fi
-        
-			    if [ "${extension_vmsecret}" = "${extension_vmsecret_confirm}" ]; then
-				    break;
-			    else
-				    whiptail --title "Error" --msgbox "Las contraseñas no coinciden." 20 60 2
-			    fi
-		    done
-        fi
-	fi
-	
-	# Write
-	echo "" >> /etc/asterisk/users.conf
-	echo "[${CURRENT_USER_EXTENSION_ID}]" >> /etc/asterisk/users.conf
-	echo "host=dynamic" >> /etc/asterisk/users.conf
-	if [ -n "${extension_fullname}" ]; then
-        echo "fullname = ${extension_fullname}" >> /etc/asterisk/users.conf
-    fi
-	
-	if [ -n "${extension_email}" ]; then
-        echo "email = ${extension_email}" >> /etc/asterisk/users.conf
-    fi
-		
-	echo "secret = ${extension_password}" >> /etc/asterisk/users.conf
-	
-	if [ -n "${extension_vmsecret}" ]; then
-        echo "hasvoicemail = yes" >> /etc/asterisk/users.conf
-		echo "vmsecret = ${extension_vmsecret}" >> /etc/asterisk/users.conf
+            extension_vmsecret_confirm=$(whiptail --title="${whiptail_title}" --passwordbox "Vuelva a introducir el código PIN para el buzón de voz" 20 60 "" 3>&1 1>&2 2>&3)
+            if [ $? -ne 0 ]; then
+                extension_vmsecret=''
+                whiptail --title="${whiptail_title}" --yesno "¿Desea activar el buzón de voz para ésta extensión?" 20 60 2
+                if [ $? -eq 0 ]; then # yes
+                    continue
+                else
+                    break
+                fi
+            fi
+
+            if [ "${extension_vmsecret}" = "${extension_vmsecret_confirm}" ]; then
+                break;
+            else
+                whiptail --title "Error" --msgbox "Las contraseñas no coinciden." 20 60 2
+            fi
+        done
     fi
 
-    if [ $ASTERISK_SHARED_VOICEMAIL_ENABLED -eq 1 ];then
-        [ ! -d /var/spool/asterisk/voicemail/default/${ASTERISK_SHARED_VOICEMAIL_EXTENSION} ] && mkdir -p /var/spool/asterisk/voicemail/default/${ASTERISK_SHARED_VOICEMAIL_EXTENSION}
-        ln -s /var/spool/asterisk/voicemail/default/${ASTERISK_SHARED_VOICEMAIL_EXTENSION} /var/spool/asterisk/voicemail/default/${CURRENT_USER_EXTENSION_ID}
+    # Write
+    echo "" >> /etc/asterisk/users.conf
+    echo "[${CURRENT_USER_EXTENSION_ID}]" >> /etc/asterisk/users.conf
+    echo "host=dynamic" >> /etc/asterisk/users.conf
+    if [ -n "${extension_fullname}" ]; then
+        echo "fullname = ${extension_fullname}" >> /etc/asterisk/users.conf
     fi
-    
-	ASTERISK_USER_EXTENSIONS+=( "${CURRENT_USER_EXTENSION_ID}" )
-	((CURRENT_USER_EXTENSION_ID=CURRENT_USER_EXTENSION_ID+1))
+
+    if [ -n "${extension_email}" ]; then
+        echo "email = ${extension_email}" >> /etc/asterisk/users.conf
+    fi
+
+    echo "secret = ${extension_password}" >> /etc/asterisk/users.conf
+
+    if [ -n "${extension_vmsecret}" ]; then
+        echo "hasvoicemail = yes" >> /etc/asterisk/users.conf
+        echo "vmsecret = ${extension_vmsecret}" >> /etc/asterisk/users.conf
+    fi
+
+    if [ -z "${extension_vmsecret}" ]; then
+        if [ $ASTERISK_SHARED_VOICEMAIL_ENABLED -eq 1 ];then
+            [ ! -d /var/spool/asterisk/voicemail/default/${ASTERISK_SHARED_VOICEMAIL_EXTENSION} ] && mkdir -p /var/spool/asterisk/voicemail/default/${ASTERISK_SHARED_VOICEMAIL_EXTENSION}
+            ln -s /var/spool/asterisk/voicemail/default/${ASTERISK_SHARED_VOICEMAIL_EXTENSION} /var/spool/asterisk/voicemail/default/${CURRENT_USER_EXTENSION_ID}
+        fi
+    else
+        ASTERISK_USER_VOICEMAIL_EXTENSIONS+=( "${CURRENT_USER_EXTENSION_ID}" )
+    fi
+
+    ASTERISK_USER_EXTENSIONS+=( "${CURRENT_USER_EXTENSION_ID}" )
+    ((CURRENT_USER_EXTENSION_ID=CURRENT_USER_EXTENSION_ID+1))
 }
 
 
