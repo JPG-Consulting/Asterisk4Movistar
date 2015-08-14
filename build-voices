@@ -5,6 +5,7 @@ ASTERISK_SOUNDS_DIR="/var/lib/asterisk/sounds"
 
 DOWNLOAD_VERSION='1.4'
 DEBIAN_VERSION='1.4.22-1'
+DEBIAN_MAINTAINER="Juan Pedro Gonzalez <unaputacuenta@hotmail.com>"
 
 do_create_directories() {
     local package_name=$1
@@ -31,7 +32,7 @@ do_package_core_sounds_es_g729() {
 Package: ${package_name}
 Version: ${DEBIAN_VERSION}
 Architecture: all
-Maintainer: Juan Pedro Gonzalez <unaputacuenta@hotmail.com>
+Maintainer: ${DEBIAN_MAINTAINER}
 Section: comm
 Priority: extra
 Homepage: http://www.voipnovatos.es/
