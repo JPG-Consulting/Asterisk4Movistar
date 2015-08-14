@@ -19,7 +19,7 @@ do_package_config() {
     mkdir -p /usr/src/certified-asterisk-config-${ASTERISK_VERSION}/etc/asterisk/
     mkdir -p /usr/src/certified-asterisk-config-${ASTERISK_VERSION}/DEBIAN
     
-    touch /src/certified-asterisk-config-${ASTERISK_VERSION}/DEBIAN/conffiles
+    touch /usr/src/certified-asterisk-config-${ASTERISK_VERSION}/DEBIAN/conffiles
     
     cp /usr/src/certified-asterisk-${ASTERISK_VERSION}/configs/* /usr/src/certified-asterisk-config-${ASTERISK_VERSION}/usr/share/doc/asterisk-config/examples/configs/
     
