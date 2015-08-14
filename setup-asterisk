@@ -115,6 +115,11 @@ allow=alaw
 allow=gsm
 EOF
 
+        if [ $ASTERISK_SHARED_VOICEMAIL_ENABLED -eq 1 ];then
+            [ ! -d /var/spool/asterisk/voicemail/default/${ASTERISK_SHARED_VOICEMAIL_EXTENSION} ] && mkdir -p /var/spool/asterisk/voicemail/default/${ASTERISK_SHARED_VOICEMAIL_EXTENSION}
+            ln -s /var/spool/asterisk/voicemail/default/${ASTERISK_SHARED_VOICEMAIL_EXTENSION} /var/spool/asterisk/voicemail/default/1001
+        fi
+        
 		COMTREND_VG8050_EXTENSION=1001
 	fi
 }
