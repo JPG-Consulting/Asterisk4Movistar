@@ -5,11 +5,11 @@ ASTERISK_VERSION="11.6-cert11"
 DEBIAN_MAINTAINER="Juan Pedro Gonzalez <opensource@jpg-consulting.com>"
 
 do_download_asterisk() {
-    wget http://downloads.asterisk.org/pub/telephony/certified-asterisk/certified-asterisk-{ASTERISK_VERSION}.tar.gz -O /usr/src/certified-asterisk-{ASTERISK_VERSION}.tar.gz
+    wget http://downloads.asterisk.org/pub/telephony/certified-asterisk/certified-asterisk-${ASTERISK_VERSION}.tar.gz -O /usr/src/certified-asterisk-${ASTERISK_VERSION}.tar.gz
     
     cd /usr/src
-    tar -zxf /usr/src/certified-asterisk-{ASTERISK_VERSION}.tar.gz
-    rm /usr/src/certified-asterisk-{ASTERISK_VERSION}.tar.gz
+    tar -zxf /usr/src/certified-asterisk-${ASTERISK_VERSION}.tar.gz
+    rm /usr/src/certified-asterisk-${ASTERISK_VERSION}.tar.gz
 }
 
 do_package_config() {
