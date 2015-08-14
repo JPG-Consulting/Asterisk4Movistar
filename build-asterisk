@@ -26,7 +26,7 @@ do_package_config() {
     for file in /usr/src/certified-asterisk-${ASTERISK_VERSION}/configs/*; do
         dst=${file%.sample}
         dst="/etc/asterisk/${dst##*/}"
-        echo "${dst}" >> /src/certified-asterisk-config-${ASTERISK_VERSION}/DEBIAN/conffiles
+        echo "${dst}" >> /usr/src/certified-asterisk-config-${ASTERISK_VERSION}/DEBIAN/conffiles
         cp ${file} /usr/src/certified-asterisk-config-${ASTERISK_VERSION}${dst}
     done
 
