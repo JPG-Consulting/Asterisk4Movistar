@@ -50,6 +50,8 @@ EOF
 
     cd /usr/src
     dpkg-deb --build ${package_name}-${DEBIAN_VERSION}/
+    
+    rm -rf /usr/src/${package_name}-${DEBIAN_VERSION}
 }
 
 do_package_core_sounds_es_g729() {
@@ -79,6 +81,8 @@ EOF
 
     cd /usr/src
     dpkg-deb --build ${package_name}-${DEBIAN_VERSION}/
+    
+    rm -rf /usr/src/${package_name}-${DEBIAN_VERSION}
 }
 
 do_package_core_sounds_es_gsm() {
@@ -109,6 +113,8 @@ EOF
 
     cd /usr/src
     dpkg-deb --build ${package_name}-${DEBIAN_VERSION}/
+    
+    rm -rf /usr/src/${package_name}-${DEBIAN_VERSION}
 }
 
 do_package_core_sounds_es_ulaw() {
@@ -138,6 +144,8 @@ EOF
 
     cd /usr/src
     dpkg-deb --build ${package_name}-${DEBIAN_VERSION}/
+    
+    rm -rf /usr/src/${package_name}-${DEBIAN_VERSION}
 }
 
 do_package_core_sounds_es_g729
