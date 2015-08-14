@@ -19,7 +19,7 @@ do_download_voices() {
         wget ${BASE_URL}/${voice_file} -O /usr/src/${voice_file}
     done
 
-    wget ${BASE_URL)/licenciadeuso.txt
+    wget ${BASE_URL}/licenciadeuso.txt
 }
 
 do_download_voices
