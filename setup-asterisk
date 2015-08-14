@@ -12,13 +12,13 @@ COMTREND_VG8050_EXTENSION=''
 
 ASTERISK_PARENTAL_PROTECTION_PIN=''
 
+ASTERISK_SHARED_VOICEMAIL_ENABLED=0
+ASTERISK_SHARED_VOICEMAIL_EXTENSION=''
+ASTERISK_SHARED_VOICEMAIL_TIMEOUT=20
+
 ASTERISK_MODULE_CHAN_DONGLE_DISA_ENABLED=0
 ASTERISK_MODULE_CHAN_DONGLE_DISA_PIN=''
 ASTERISK_MODULE_CHAN_DONGLE_DISA_PHONENUMBER=''
-
-ASTERISK_EXTERNAL_VOICEMAIL_TIMEOUT=20
-MOVISTAR_VOICEMAIL_ENABLED=0
-MOVISTAR_PHONENUMBER=''
 
 RASPBERRY_IP_ADDRESS=''
 ASK_TO_REBOOT=0
@@ -120,20 +120,35 @@ EOF
 }
 
 do_dialplan_setup() {
-	local ring_all_group=''
-	
-	if [ -n "${COMTREND_VG8050_EXTENSION}" ]; then
-		ring_all_group="SIP/${COMTREND_VG8050_EXTENSION}"
-	fi
-	
-	for extension_id in "${ASTERISK_USER_EXTENSIONS[@]}"; do
-		if [ -n "${ring_all_group}" ]; then
-			ring_all_group="${ring_all_group}&SIP/${extension_id}"
-		else
-			ring_all_group="SIP/${extension_id}"
-		fi
-	done
-	
+    local ring_all_group=''
+
+    if [ -n "${COMTREND_VG8050_EXTENSION}" ]; then
+        ring_all_group="SIP/${COMTREND_VG8050_EXTENSION}"
+    fi
+
+    for extension_id in "${ASTERISK_USER_EXTENSIONS[@]}"; do
+        if [ -n "${ring_all_group}" ]; then
+            ring_all_group="${ring_all_group}&SIP/${extension_id}"
+        else
+            ring_all_group="SIP/${extension_id}"
+        fi
+    done
+
+    if [ $ASTERISK_SHARED_VOICEMAIL_ENABLED --eq 1 ]; then
+        echo "" >> /etc/asterisk/extensions.conf
+        echo "[groupmwi-on]" >> /etc/asterisk/extensions.conf
+        echo "; Switch custom device state to show group voicemail has messages waiting" >> /etc/asterisk/extensions.conf
+        echo "exten => _X.,1,Goto(s,1)" >> /etc/asterisk/extensions.conf
+        echo "exten => s,1,Set(DEVICE_STATE(Custom:groupmwi)=INUSE)" >> /etc/asterisk/extensions.conf
+        echo "exten => s,2,Noop(New state for groupmwi is \${DEVICE_STATE(Custom:groupmwi)})" >> /etc/asterisk/extensions.conf
+        echo "" >> /etc/asterisk/extensions.conf
+        echo "[groupmwi-off]" >> /etc/asterisk/extensions.conf
+        echo "; Switch custom device state to show group voicemail has no messages waiting" >> /etc/asterisk/extensions.conf
+        echo "exten => _X.,1,Goto(s,1)" >> /etc/asterisk/extensions.conf
+        echo "exten => s,1,Set(DEVICE_STATE(Custom:groupmwi)=NOT_INUSE)" >> /etc/asterisk/extensions.conf
+        echo "exten => s,2,Noop(New state for groupmwi is \${DEVICE_STATE(Custom:groupmwi)})" >> /etc/asterisk/extensions.conf
+    fi
+
 	echo "" >> /etc/asterisk/extensions.conf
 	echo "[internas]" >> /etc/asterisk/extensions.conf
 	echo "exten => _${ASTERISK_DIALPLAN_USERS},1,Set(TARGETNO=\${EXTEN})" >> /etc/asterisk/extensions.conf
@@ -278,21 +293,36 @@ do_dialplan_setup() {
     echo "include => numeros-cortos" >> /etc/asterisk/extensions.conf
     echo "include => nomadas" >> /etc/asterisk/extensions.conf
     echo "include => internacionales" >> /etc/asterisk/extensions.conf
+
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[from-internal]" >> /etc/asterisk/extensions.conf
+    if [ $ASTERISK_SHARED_VOICEMAIL_ENABLED --eq 1 ]; then
+        echo "; Retrieve messages from the group message box by dialling 97${ASTERISK_SHARED_VOICEMAIL_EXTENSION}" >> /etc/asterisk/extensions.conf
+        echo "exten => 97${ASTERISK_SHARED_VOICEMAIL_EXTENSION},1,Answer" >> /etc/asterisk/extensions.conf
+        echo "exten => 97${ASTERISK_SHARED_VOICEMAIL_EXTENSION},2,VoicemailMain(${ASTERISK_SHARED_VOICEMAIL_EXTENSION}@default)" >> /etc/asterisk/extensions.conf
+        echo "; Add hint to link to the Custom Device State" >> /etc/asterisk/extensions.conf
+        echo "exten => 97${ASTERISK_SHARED_VOICEMAIL_EXTENSION},hint,Custom:groupmwi" >> /etc/asterisk/extensions.conf
+    fi
+
+    echo "" >> /etc/asterisk/extensions.conf
+    echo "[from-external]" >> /etc/asterisk/extensions.conf
     
     echo "" >> /etc/asterisk/extensions.conf
     echo "[from-movistar]" >> /etc/asterisk/extensions.conf
 	echo "include => internas" >> /etc/asterisk/extensions.conf
-	if [ $MOVISTAR_VOICEMAIL_ENABLED --eq 1 ]; then
-		echo "exten => s,1,Dial(${ring_all_group}, ${ASTERISK_EXTERNAL_VOICEMAIL_TIMEOUT})" >> /etc/asterisk/extensions.conf
-		echo "exten => s-NOANSWER,1,Voicemail(${MOVISTAR_PHONENUMBER},u)" >> /etc/asterisk/extensions.conf
+	if [ $ASTERISK_SHARED_VOICEMAIL_ENABLED --eq 1 ]; then
+		echo "exten => s,1,Dial(${ring_all_group}, ${ASTERISK_SHARED_VOICEMAIL_TIMEOUT})" >> /etc/asterisk/extensions.conf
+        echo "exten => s,n,Goto(s-\${DIALSTATUS},1)" >> /etc/asterisk/extensions.conf
+        echo "" >> /etc/asterisk/extensions.conf
+		echo "exten => s-NOANSWER,1,Voicemail(${ASTERISK_SHARED_VOICEMAIL_EXTENSION},u)" >> /etc/asterisk/extensions.conf
 		echo "exten => s-NOANSWER,n,Hangup()" >> /etc/asterisk/extensions.conf
 		echo "" >> /etc/asterisk/extensions.conf
-		echo "exten => s-BUSY,1,Voicemail(${MOVISTAR_PHONENUMBER},b)" >> /etc/asterisk/extensions.conf
+		echo "exten => s-BUSY,1,Voicemail(${ASTERISK_SHARED_VOICEMAIL_EXTENSION},b)" >> /etc/asterisk/extensions.conf
 		echo "exten => s-BUSY,n,Hangup()" >> /etc/asterisk/extensions.conf
 		echo "" >> /etc/asterisk/extensions.conf
 		echo "exten => _s-.,1,Goto(s-NOANSWER,1)" >> /etc/asterisk/extensions.conf
 		echo "" >> /etc/asterisk/extensions.conf
-		echo "exten => a,1,VoicemailMain(${MOVISTAR_PHONENUMBER})" >> /etc/asterisk/extensions.conf
+		echo "exten => a,1,VoicemailMain(${ASTERISK_SHARED_VOICEMAIL_EXTENSION})" >> /etc/asterisk/extensions.conf
 		echo "exten => a,n,Hangup()" >> /etc/asterisk/extensions.conf
 	else
 		echo "exten => s,1,Dial(${ring_all_group})" >> /etc/asterisk/extensions.conf
@@ -440,55 +470,18 @@ do_finish() {
 }
 
 do_movistar_sip_account() {
-	local movistar_phonenumber=''
-	local movistar_domain='telefonica.net'
-	local movistar_domain_port='5060'
-	local movistar_outboundproxy='10.31.255.134'
-	local movistar_outboundproxy_port='5070'
-	local movistar_dtmfmode='auto'
-	local voicemail_pin=''
-	local voicemail_pin_confirm=''
-	local voicemail_email=''
+    local movistar_phonenumber=''
+    local movistar_domain='telefonica.net'
+    local movistar_domain_port='5060'
+    local movistar_outboundproxy='10.31.255.134'
+    local movistar_outboundproxy_port='5070'
+    local movistar_dtmfmode='auto'
 	
-	movistar_phonenumber=$(whiptail --title="Movistar VoIP" --inputbox "Introduzca su número de teléfono fijo" 20 60 "" 3>&1 1>&2 2>&3)
+    movistar_phonenumber=$(whiptail --title="Movistar VoIP" --inputbox "Introduzca su número de teléfono fijo" 20 60 "" 3>&1 1>&2 2>&3)
     if [ $? -ne 0 ]; then
         return 1
     fi
-    
-    	whiptail --title "Movistar VoIP" --yesno "¿Desea activar el buzón de voz?" 20 60 2 --yes-button Si --no-button No
-	if [ $? -eq 0 ]; then
-		while true; do
-        		voicemail_pin=$(whiptail --title="Buzón de voz" --passwordbox "Introduzca el PIN del buzón de voz" 20 60 "" 3>&1 1>&2 2>&3)
-        		if [ $? -ne 0 ]; then
-        			voicemail_pin=''
-            			break
-        		fi
-    
-        		voicemail_pin_confirm=$(whiptail --title="Buzón de voz" --passwordbox "Vuelva a introducir el PIN del buzón de voz" 20 60 "" 3>&1 1>&2 2>&3)
-        		if [ $? -ne 0 ]; then
-        			voicemail_pin=''
-            			break
-        		fi
-        
-        		if [ "${voicemail_pin}" = "${voicemail_pin_confirm}" ]; then
-            			break
-        		else
-        			 whiptail --title "Error" --msgbox "Las contraseñas no coinciden." 20 60 2
-        		fi
-    		done
-    		
-    		if [ -n "${voicemail_pin}" ]; then
-    			voicemail_email=$(whiptail --title="Buzón de voz" --inputbox "Introduzca el correo electrónico del buzón de voz" 20 60 "" 3>&1 1>&2 2>&3)
-    			if [ $? -ne 0 ]; then
-        			voicemail_email=''
-    			fi
-    			
-			sed -e "s|^\[default\]|\[default\]\n${movistar_phonenumber} => ${voicemail_pin},${movistar_phonenumber},${voicemail_email}|" -i /etc/asterisk/voicemail.conf
-			
-			MOVISTAR_VOICEMAIL_ENABLED=1
-		fi
-	fi
-	
+
 	cat <<EOF >> /etc/asterisk/sip.conf
 
 [Movistar](!)
@@ -515,17 +508,16 @@ port=${movistar_domain_port}
 qualify=no
 trustpid=yes
 EOF
-	
-	# El registro en el servidor SIP de movistar
-	sed -e "s|^;register => 2345:password@sip_proxy/1234|;register => 2345:password@sip_proxy/1234\nregister => ${movistar_phonenumber}@${movistar_domain}:${movistar_phonenumber}@${movistar_outboundproxy}:${movistar_outboundproxy_port}|" -i /etc/asterisk/sip.conf
 
-	# Guardamos el numero
-	MOVISTAR_PHONENUMBER="${movistar_phonenumber}"
-	ASTERISK_TRUNK_PHONENUMBERS+=( "${movistar_phonenumber}" )
-	
-	# Guardamos los trunks
-	ASTERISK_TRUNK_MOVISTAR_FTTH_OUT="SIP/MovistarOut"
-	ASTERISK_TRUNK_MOVISTAR_FTTH_IN='SIP/MovistarIn'
+    # El registro en el servidor SIP de movistar
+    sed -e "s|^;register => 2345:password@sip_proxy/1234|;register => 2345:password@sip_proxy/1234\nregister => ${movistar_phonenumber}@${movistar_domain}:${movistar_phonenumber}@${movistar_outboundproxy}:${movistar_outboundproxy_port}|" -i /etc/asterisk/sip.conf
+
+    # Guardamos el numero
+    ASTERISK_TRUNK_PHONENUMBERS+=( "${movistar_phonenumber}" )
+
+    # Guardamos los trunks
+    ASTERISK_TRUNK_MOVISTAR_FTTH_OUT="SIP/MovistarOut"
+    ASTERISK_TRUNK_MOVISTAR_FTTH_IN='SIP/MovistarIn'
 }
 
 do_parental_protection_set_pin() {
@@ -550,6 +542,84 @@ do_parental_protection_set_pin() {
             whiptail --title "Error" --msgbox "Las contraseñas no coinciden." 20 60 2
         fi
     done
+}
+
+do_shared_voicemail() {
+    local voicemail_extension=''
+    local voicemail_pin=''
+    local voicemail_pin_confirm=''
+    local voicemail_email=''
+    local whiptail_title="Buzón de voz"
+    
+    voicemail_extension=$(whiptail --title="${whiptail_title}" --inputbox "Introduzca la extensión para el buzón de voz compartido" 20 60 "" 3>&1 1>&2 2>&3)
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+    
+    while true; do
+        voicemail_pin=$(whiptail --title="${whiptail_title}" --passwordbox "Introduzca el PIN del buzón de voz" 20 60 "" 3>&1 1>&2 2>&3)
+        if [ $? -ne 0 ]; then
+            voicemail_pin=''
+            continue
+        fi
+    
+        voicemail_pin_confirm=$(whiptail --title="${whiptail_title}" --passwordbox "Vuelva a introducir el PIN del buzón de voz" 20 60 "" 3>&1 1>&2 2>&3)
+        if [ $? -ne 0 ]; then
+            voicemail_pin=''
+            continue
+        fi
+        
+        if [ "${voicemail_pin}" = "${voicemail_pin_confirm}" ]; then
+            break
+        else
+            whiptail --title "Error" --msgbox "Las contraseñas no coinciden." 20 60 2
+        fi
+    done
+
+    voicemail_email=$(whiptail --title="${whiptail_title}" --inputbox "Introduzca el correo electrónico del buzón de voz" 20 60 "" 3>&1 1>&2 2>&3)
+    if [ $? -ne 0 ]; then
+        voicemail_email=''
+    fi
+
+    # Configuración
+    sed -e "s|^\[default\]|\[default\]\n${voicemail_extension} => ${voicemail_pin},Buzón de voz compartido,${voicemail_email}|" -i /etc/asterisk/voicemail.conf
+
+    # Create the script runned by externnotify
+    cat <<EOF > /usr/bin/groupmwi
+#!/bin/sh
+#
+# Control script to change the status of a custom device state in Asterisk
+# Called from Asterisk whenever a voicemail message is left
+#
+VM_CONTEXT=\$1
+EXTEN=\$2
+VM_COUNT=\$3
+
+ASTCMD="/usr/sbin/asterisk -rx"
+
+if [ \$EXTEN -ne ${voicemail_extension} ]; then
+    exit 0
+fi
+
+if [[ \$VM_COUNT = "0" ]]; then
+    logger -t groupmwi "Switching OFF Group mailbox message"
+    \$ASTCMD "originate Local/s@groupmwi-off extension 4@default"
+else
+    logger -t groupmwi "Switching ON Group mailbox message"
+    \$ASTCMD "originate Local/s@groupmwi-on extension 4@default"
+fi
+
+exit 0
+EOF
+    chmod +x /usr/bin/groupwmi
+    chmod 755 /usr/bin/groupmwi
+
+    # Establecer las variables globales
+    ASTERISK_SHARED_VOICEMAIL_ENABLED=1
+    ASTERISK_SHARED_VOICEMAIL_EXTENSION="${voicemail_extension}"
+    ASTERISK_SHARED_VOICEMAIL_TIMEOUT=20
+    
+    return 0
 }
 
 do_user_add() {
@@ -590,36 +660,38 @@ do_user_add() {
         extension_email=''
     fi
 	
-	whiptail --title="${whiptail_title}" --yesno "¿Desea activar el buzón de voz para ésta extensión?" 20 60 2 --defaultno
-    if [ $? -eq 0 ]; then # yes
-		while true; do
-			extension_vmsecret=$(whiptail --title="${whiptail_title}" --passwordbox "Introduzca el código PIN para el buzón de voz" 20 60 "" 3>&1 1>&2 2>&3)
-			if [ $? -ne 0 ]; then
-				whiptail --title="${whiptail_title}" --yesno "¿Desea activar el buzón de voz para ésta extensión?" 20 60 2
-				if [ $? -eq 0 ]; then # yes
-					continue
-				else
-					break
-				fi
-			fi
+	if [ $ASTERISK_SHARED_VOICEMAIL_ENABLED -eq 0 ]; then
+	    whiptail --title="${whiptail_title}" --yesno "¿Desea activar el buzón de voz para ésta extensión?" 20 60 2 --defaultno
+        if [ $? -eq 0 ]; then # yes
+		    while true; do
+			    extension_vmsecret=$(whiptail --title="${whiptail_title}" --passwordbox "Introduzca el código PIN para el buzón de voz" 20 60 "" 3>&1 1>&2 2>&3)
+			    if [ $? -ne 0 ]; then
+				    whiptail --title="${whiptail_title}" --yesno "¿Desea activar el buzón de voz para ésta extensión?" 20 60 2
+				    if [ $? -eq 0 ]; then # yes
+					    continue
+				    else
+					    break
+				    fi
+			    fi
     
-			extension_vmsecret_confirm=$(whiptail --title="${whiptail_title}" --passwordbox "Vuelva a introducir el código PIN para el buzón de voz" 20 60 "" 3>&1 1>&2 2>&3)
-			if [ $? -ne 0 ]; then
-				extension_vmsecret=''
-				whiptail --title="${whiptail_title}" --yesno "¿Desea activar el buzón de voz para ésta extensión?" 20 60 2
-				if [ $? -eq 0 ]; then # yes
-					continue
-				else
-					break
-				fi
-			fi
+			    extension_vmsecret_confirm=$(whiptail --title="${whiptail_title}" --passwordbox "Vuelva a introducir el código PIN para el buzón de voz" 20 60 "" 3>&1 1>&2 2>&3)
+			    if [ $? -ne 0 ]; then
+				    extension_vmsecret=''
+				    whiptail --title="${whiptail_title}" --yesno "¿Desea activar el buzón de voz para ésta extensión?" 20 60 2
+				    if [ $? -eq 0 ]; then # yes
+					    continue
+				    else
+					    break
+				    fi
+			    fi
         
-			if [ "${extension_vmsecret}" = "${extension_vmsecret_confirm}" ]; then
-				break;
-			else
-				whiptail --title "Error" --msgbox "Las contraseñas no coinciden." 20 60 2
-			fi
-		done
+			    if [ "${extension_vmsecret}" = "${extension_vmsecret_confirm}" ]; then
+				    break;
+			    else
+				    whiptail --title "Error" --msgbox "Las contraseñas no coinciden." 20 60 2
+			    fi
+		    done
+        fi
 	fi
 	
 	# Write
@@ -651,6 +723,14 @@ do_user_add() {
 whiptail --title "Tarjeta SD" --yesno "¿Desea expandir el sistema de archivos?" 20 60 2 --yes-button Si --no-button No
 if [ $? -eq 0 ]; then
 	do_expand_rootfs
+fi
+
+whiptail --title "Buzón de voz" --yesno "¿Desea utilizar un buzón de voz compartido?" 20 60 1 --yes-button Si --no-button No
+if [ $? -eq 0 ]; then
+    do_shared_voicemail
+    ASTERISK_SHARED_VOICEMAIL_ENABLED=1
+else
+    [ -f /usr/bin/groupwmi ] && rm /usr/bin/groupwmi
 fi
 
 whiptail --title "Extensiones" --yesno "¿Desea crear algún usuario?" 20 60 2 --yes-button Si --no-button No
