@@ -154,8 +154,9 @@ do_dialplan_setup() {
     echo "exten => *97,1,Answer()" >> /etc/asterisk/extensions.conf
     if [ $ASTERISK_SHARED_VOICEMAIL_ENABLED --eq 1 ]; then
         echo "exten => *97,n,VoiceMailMain(${ASTERISK_SHARED_VOICEMAIL_EXTENSION}@default)" >> /etc/asterisk/extensions.conf
+        echo "exten => *97,hint,,Custom:groupmwi" >> /etc/asterisk/extensions.conf
     else
-        echo "exten => 97,n,VoiceMailMain(\${CALLERID(num)}@default)" >> /etc/asterisk/extensions.conf
+        echo "exten => *97,n,VoiceMailMain(\${CALLERID(num)}@default)" >> /etc/asterisk/extensions.conf
     fi
     echo "exten => *97,n,Hangup()" >> /etc/asterisk/extensions.conf
     
@@ -306,13 +307,6 @@ do_dialplan_setup() {
 
     echo "" >> /etc/asterisk/extensions.conf
     echo "[from-internal]" >> /etc/asterisk/extensions.conf
-    if [ $ASTERISK_SHARED_VOICEMAIL_ENABLED --eq 1 ]; then
-        echo "; Retrieve messages from the group message box by dialling 97${ASTERISK_SHARED_VOICEMAIL_EXTENSION}" >> /etc/asterisk/extensions.conf
-        echo "exten => 97${ASTERISK_SHARED_VOICEMAIL_EXTENSION},1,Answer" >> /etc/asterisk/extensions.conf
-        echo "exten => 97${ASTERISK_SHARED_VOICEMAIL_EXTENSION},2,VoicemailMain(${ASTERISK_SHARED_VOICEMAIL_EXTENSION}@default)" >> /etc/asterisk/extensions.conf
-        echo "; Add hint to link to the Custom Device State" >> /etc/asterisk/extensions.conf
-        echo "exten => 97${ASTERISK_SHARED_VOICEMAIL_EXTENSION},hint,Custom:groupmwi" >> /etc/asterisk/extensions.conf
-    fi
 
     echo "" >> /etc/asterisk/extensions.conf
     echo "[from-external]" >> /etc/asterisk/extensions.conf
