@@ -18,14 +18,14 @@ declare -a VOICE_FILES=( \
 do_create_directories() {
     for voice_file in "${VOICE_FILES[@]}"; do
         mkdir -p /usr/src/${voice_file}-${VOICE_VERSION}
-        mkdir -p /usr/src/${voice_file}-${VOICE_VERSION)/DEBIAN
+        mkdir -p /usr/src/${voice_file}-${VOICE_VERSION}/DEBIAN
         
-        touch /usr/src/${voice_file}-${VOICE_VERSION)/DEBIAN/control
+        touch /usr/src/${voice_file}-${VOICE_VERSION}/DEBIAN/control
         
-        wget ${BASE_URL}/${voice_file}-${VOICE_VERSION}.tar.gz -O /usr/src/${voice_file}-${VOICE_VERSION)/${voice_file}-${VOICE_VERSION}.tar.gz --no-check-certificate --no-cache
-        cd /usr/src/${voice_file}-${VOICE_VERSION)
-        tar -zxf /usr/src/${voice_file}-${VOICE_VERSION)/${voice_file}-${VOICE_VERSION}.tar.gz
-        rm /usr/src/${voice_file}-${VOICE_VERSION)/${voice_file}-${VOICE_VERSION}.tar.gz
+        wget ${BASE_URL}/${voice_file}-${VOICE_VERSION}.tar.gz -O /usr/src/${voice_file}-${VOICE_VERSION}/${voice_file}-${VOICE_VERSION}.tar.gz --no-check-certificate --no-cache
+        cd /usr/src/${voice_file}-${VOICE_VERSION}
+        tar -zxf /usr/src/${voice_file}-${VOICE_VERSION}/${voice_file}-${VOICE_VERSION}.tar.gz
+        rm /usr/src/${voice_file}-${VOICE_VERSION}/${voice_file}-${VOICE_VERSION}.tar.gz
     done
 }
 
