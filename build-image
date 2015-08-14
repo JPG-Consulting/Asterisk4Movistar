@@ -308,7 +308,7 @@ function do_backup()
           --exclude "${IMAGE_FILE}" \
           --exclude "/root/build-image" \
           --exclude "/etc/network/interfaces" \
-          --exclude "/usr/bin/groupwmi" \
+          --exclude "/var/spool/asterisk/voicemail/default/*" \
           / ${MOUNT_PATH}/
     if [ $? -ne 0 ]; then
         echo "Error running backup"
