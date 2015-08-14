@@ -2,30 +2,35 @@
 
 BASE_URL="https://www.voipnovatos.es/voces"
 
+VOICE_VERSION='1.4'
+
 declare -a VOICE_FILES=( \
-    'voipnovatos-extra-sounds-es-alaw-1.4.tar.gz' \
-    'voipnovatos-extra-sounds-es-g729-1.4.tar.gz' \
-    'asterisk-voces-es-v1_2-moh-voipnovatos.tar.gz' \
-    'voipnovatos-extra-sounds-es-ulaw-1.4.tar.gz' \
-    'voipnovatos-extra-sounds-es-gsm-1.4.tar.gz' \
-    'voipnovatos-core-sounds-es-g729-1.4.tar.gz' \
-    'voipnovatos-core-sounds-es-alaw-1.4.tar.gz' \
-    'voipnovatos-core-sounds-es-gsm-1.4.tar.gz' \
-    'voipnovatos-core-sounds-es-ulaw-1.4.tar.gz' \
+    'voipnovatos-extra-sounds-es-alaw' \
+    'voipnovatos-extra-sounds-es-g729' \
+    'voipnovatos-extra-sounds-es-ulaw' \
+    'voipnovatos-extra-sounds-es-gsm' \
+    'voipnovatos-core-sounds-es-g729' \
+    'voipnovatos-core-sounds-es-alaw' \
+    'voipnovatos-core-sounds-es-gsm' \
+    'voipnovatos-core-sounds-es-ulaw' \
 )
 
-do_download_voices() {
+do_create_directories() {
     for voice_file in "${VOICE_FILES[@]}"; do
-        wget ${BASE_URL}/${voice_file} -O /usr/src/${voice_file}
-    done
-
-    wget ${BASE_URL}/licenciadeuso.txt -O /usr/src/licenciadeuso.txt
-    
-    cd /usr/src
-    
-    for voice_file in "${VOICE_FILES[@]}"; do
-        tar -zxf /usr/src/${voice_file}
+        mkdir -p /usr/src/${voice_file}-${VOICE_VERSION}
+        mkdir -p /usr/src/${voice_file}-${VOICE_VERSION)/DEBIAN
     done
 }
 
+do_download_voices() {
+    for voice_file in "${VOICE_FILES[@]}"; do
+        wget ${BASE_URL}/${voice_file}-${VOICE_VERSION}.tar.gz -O /usr/src/${voice_file}-${VOICE_VERSION}.tar.gz --no-check-certificate --no-cache
+    done
+
+    # https://www.voipnovatos.es/voces/asterisk-voces-es-v1_2-moh-voipnovatos.tar.gz
+    
+    wget ${BASE_URL}/licenciadeuso.txt -O /usr/src/licenciadeuso.txt --no-check-certificate --no-cache
+}
+
 do_download_voices
+do_create_directories
