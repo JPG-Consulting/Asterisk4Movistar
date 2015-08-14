@@ -134,30 +134,10 @@ do_dialplan_setup() {
         fi
     done
 
-    if [ $ASTERISK_SHARED_VOICEMAIL_ENABLED --eq 1 ]; then
-        echo "" >> /etc/asterisk/extensions.conf
-        echo "[groupmwi-on]" >> /etc/asterisk/extensions.conf
-        echo "; Switch custom device state to show group voicemail has messages waiting" >> /etc/asterisk/extensions.conf
-        echo "exten => _X.,1,Goto(s,1)" >> /etc/asterisk/extensions.conf
-        echo "exten => s,1,Set(DEVICE_STATE(Custom:groupmwi)=INUSE)" >> /etc/asterisk/extensions.conf
-        echo "exten => s,2,Noop(New state for groupmwi is \${DEVICE_STATE(Custom:groupmwi)})" >> /etc/asterisk/extensions.conf
-        echo "" >> /etc/asterisk/extensions.conf
-        echo "[groupmwi-off]" >> /etc/asterisk/extensions.conf
-        echo "; Switch custom device state to show group voicemail has no messages waiting" >> /etc/asterisk/extensions.conf
-        echo "exten => _X.,1,Goto(s,1)" >> /etc/asterisk/extensions.conf
-        echo "exten => s,1,Set(DEVICE_STATE(Custom:groupmwi)=NOT_INUSE)" >> /etc/asterisk/extensions.conf
-        echo "exten => s,2,Noop(New state for groupmwi is \${DEVICE_STATE(Custom:groupmwi)})" >> /etc/asterisk/extensions.conf
-    fi
-
     echo "" >> /etc/asterisk/extensions.conf
     echo "[servicios]" >> /etc/asterisk/extensions.conf
     echo "exten => *97,1,Answer()" >> /etc/asterisk/extensions.conf
-    if [ $ASTERISK_SHARED_VOICEMAIL_ENABLED --eq 1 ]; then
-        echo "exten => *97,n,VoiceMailMain(${ASTERISK_SHARED_VOICEMAIL_EXTENSION}@default)" >> /etc/asterisk/extensions.conf
-        echo "exten => *97,hint,,Custom:groupmwi" >> /etc/asterisk/extensions.conf
-    else
-        echo "exten => *97,n,VoiceMailMain(\${CALLERID(num)}@default)" >> /etc/asterisk/extensions.conf
-    fi
+    echo "exten => *97,n,VoiceMailMain(\${CALLERID(num)}@default)" >> /etc/asterisk/extensions.conf
     echo "exten => *97,n,Hangup()" >> /etc/asterisk/extensions.conf
     
     echo "" >> /etc/asterisk/extensions.conf
@@ -587,37 +567,6 @@ do_shared_voicemail() {
 
     # Configuración
     sed -e "s|^\[default\]|\[default\]\n${voicemail_extension} => ${voicemail_pin},Buzón de voz compartido,${voicemail_email}|" -i /etc/asterisk/voicemail.conf
-    sed -e "s|^;externnotify=/usr/bin/myapp|externnotify=/usr/bin/groupwmi|" -i /etc/asterisk/voicemail.conf
-    
-    # Create the script runned by externnotify
-    cat <<EOF > /usr/bin/groupwmi
-#!/bin/sh
-#
-# Control script to change the status of a custom device state in Asterisk
-# Called from Asterisk whenever a voicemail message is left
-#
-VM_CONTEXT=\$1
-EXTEN=\$2
-VM_COUNT=\$3
-
-ASTCMD="/usr/sbin/asterisk -rx"
-
-if [ \$EXTEN -ne ${voicemail_extension} ]; then
-    exit 0
-fi
-
-if [[ \$VM_COUNT = "0" ]]; then
-    logger -t groupmwi "Switching OFF Group mailbox message"
-    \$ASTCMD "originate Local/s@groupmwi-off extension ${voicemail_extension}@default"
-else
-    logger -t groupmwi "Switching ON Group mailbox message"
-    \$ASTCMD "originate Local/s@groupmwi-on extension ${voicemail_extension}@default"
-fi
-
-exit 0
-EOF
-    chmod +x /usr/bin/groupwmi
-    chmod 755 /usr/bin/groupwmi
 
     # Establecer las variables globales
     ASTERISK_SHARED_VOICEMAIL_ENABLED=1
