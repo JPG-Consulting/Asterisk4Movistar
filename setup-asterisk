@@ -144,7 +144,9 @@ do_dialplan_setup() {
     echo "[internas]" >> /etc/asterisk/extensions.conf
     echo "exten => _${ASTERISK_DIALPLAN_USERS},1,Set(TARGETNO=\${EXTEN})" >> /etc/asterisk/extensions.conf
     echo "exten => _${ASTERISK_DIALPLAN_USERS},n,Dial(SIP/\${EXTEN})" >> /etc/asterisk/extensions.conf
-    echo "exten => _${ASTERISK_DIALPLAN_USERS},n,Goto(s-\${DIALSTATUS},1)" >> /etc/asterisk/extensions.conf
+    if [ $ASTERISK_SHARED_VOICEMAIL_ENABLED -eq 0 ]; then
+        echo "exten => _${ASTERISK_DIALPLAN_USERS},n,Goto(s-\${DIALSTATUS},1)" >> /etc/asterisk/extensions.conf
+    fi
     if [ -n "${COMTREND_VG8050_EXTENSION}" ]; then
         echo "exten => ${COMTREND_VG8050_EXTENSION},1,Dial(SIP/${COMTREND_VG8050_EXTENSION})"  >> /etc/asterisk/extensions.conf
         echo "exten => ${COMTREND_VG8050_EXTENSION},n,Hangup()"  >> /etc/asterisk/extensions.conf
@@ -155,18 +157,20 @@ do_dialplan_setup() {
         echo "exten => ${phonenumber},n,Hangup()" >> /etc/asterisk/extensions.conf
     done
     # Voicemail
-    echo "" >> /etc/asterisk/extensions.conf
-    echo "exten => s-NOANSWER,1,Voicemail(\${TARGETNO},u)" >> /etc/asterisk/extensions.con
-    echo "exten => s-NOANSWER,n,Hangup()" >> /etc/asterisk/extensions.conf
-    echo "" >> /etc/asterisk/extensions.conf
-    echo "exten => s-BUSY,1,Voicemail(${TARGETNO},b)" >> /etc/asterisk/extensions.conf
-    echo "exten => s-BUSY,n,Hangup()" >> /etc/asterisk/extensions.conf
-    echo "" >> /etc/asterisk/extensions.conf
-    echo "exten => _s-.,1,Goto(s-NOANSWER,1)" >> /etc/asterisk/extensions.conf
-    echo "" >> /etc/asterisk/extensions.conf
-    echo "exten => a,1,VoicemailMain(\${EXTEN})" >> /etc/asterisk/extensions.conf
-    echo "exten => a,n,Hangup()" >> /etc/asterisk/extensions.conf
-
+    if [ $ASTERISK_SHARED_VOICEMAIL_ENABLED -eq 0 ]; then
+        echo "" >> /etc/asterisk/extensions.conf
+        echo "exten => s-NOANSWER,1,Voicemail(\${TARGETNO},u)" >> /etc/asterisk/extensions.con
+        echo "exten => s-NOANSWER,n,Hangup()" >> /etc/asterisk/extensions.conf
+        echo "" >> /etc/asterisk/extensions.conf
+        echo "exten => s-BUSY,1,Voicemail(${TARGETNO},b)" >> /etc/asterisk/extensions.conf
+        echo "exten => s-BUSY,n,Hangup()" >> /etc/asterisk/extensions.conf
+        echo "" >> /etc/asterisk/extensions.conf
+        echo "exten => _s-.,1,Goto(s-NOANSWER,1)" >> /etc/asterisk/extensions.conf
+        echo "" >> /etc/asterisk/extensions.conf
+        echo "exten => a,1,VoicemailMain(\${EXTEN})" >> /etc/asterisk/extensions.conf
+        echo "exten => a,n,Hangup()" >> /etc/asterisk/extensions.conf
+    fi
+    
     echo "" >> /etc/asterisk/extensions.conf
     echo "[nacionales]" >> /etc/asterisk/extensions.conf
     echo "exten => _[89]ZXXXXXXX,1,Dial(${ASTERISK_TRUNK_MOVISTAR_FTTH_OUT}/\${EXTEN})" >> /etc/asterisk/extensions.conf
