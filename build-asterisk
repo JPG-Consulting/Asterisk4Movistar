@@ -23,7 +23,7 @@ do_make_asterisk()
     fi
     
     cd /usr/src/certified-asterisk-${ASTERISK_VERSION}
-    /usr/src/certified-asterisk-${ASTERISK_VERSION}/bootstrap
+    [ -f /usr/src/certified-asterisk-${ASTERISK_VERSION}/bootstrap.sh ] && /usr/src/certified-asterisk-${ASTERISK_VERSION}/bootstrap.sh
     ./configure
     
     make menuselect
