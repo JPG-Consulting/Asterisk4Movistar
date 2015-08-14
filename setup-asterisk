@@ -137,11 +137,15 @@ do_dialplan_setup() {
     echo "" >> /etc/asterisk/extensions.conf
     echo "[servicios]" >> /etc/asterisk/extensions.conf
     echo "exten => *97,1,Answer()" >> /etc/asterisk/extensions.conf
-    echo "exten => *97,n,VoiceMailMain(\${CALLERID(num)}@default)" >> /etc/asterisk/extensions.conf
+    echo "exten => *97,n,VoiceMailMain(\${CALLERID(num)}@default,s)" >> /etc/asterisk/extensions.conf
     echo "exten => *97,n,Hangup()" >> /etc/asterisk/extensions.conf
+    echo "exten => *98,1,Answer()" >> /etc/asterisk/extensions.conf
+    echo "exten => *98,n,VoiceMailMain()" >> /etc/asterisk/extensions.conf
+    echo "exten => *98,n,Hangup()" >> /etc/asterisk/extensions.conf
     
     echo "" >> /etc/asterisk/extensions.conf
     echo "[internas]" >> /etc/asterisk/extensions.conf
+    echo "include => servicios" >> /etc/asterisk/extensions.conf
     echo "exten => _${ASTERISK_DIALPLAN_USERS},1,Set(TARGETNO=\${EXTEN})" >> /etc/asterisk/extensions.conf
     echo "exten => _${ASTERISK_DIALPLAN_USERS},n,Dial(SIP/\${EXTEN})" >> /etc/asterisk/extensions.conf
     if [ $ASTERISK_SHARED_VOICEMAIL_ENABLED -eq 0 ]; then
