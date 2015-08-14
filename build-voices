@@ -21,6 +21,35 @@ do_create_directories() {
     rm /usr/src/${package_name}-${DEBIAN_VERSION}${ASTERISK_SOUNDS_DIR}/${package_name}-${DEBIAN_VERSION}.tar.gz
 }
 
+do_package_core_sounds_es_alaw() {
+    local package_name="voipnovatos-core-sounds-es-alaw"
+    
+    # Create the directory structure
+    do_create_directories ${package_name}
+    
+    # Create the control file
+    cat << EOF > /usr/src/${package_name}-${DEBIAN_VERSION}/DEBIAN/control
+Package: ${package_name}
+Version: ${DEBIAN_VERSION}
+Architecture: all
+Maintainer: ${DEBIAN_MAINTAINER}
+Section: comm
+Priority: extra
+Homepage: http://www.voipnovatos.es/
+Description: asterisk PBX sound files - en-us/g729
+ Asterisk is an Open Source PBX and telephony toolkit. It is, in a 
+ sense, middleware between Internet and telephony channels on the 
+ bottom, and Internet and telephony applications at the top.
+ .
+ Asterisk includes a set of standard sound files in various formats. 
+ This package contains the core part of that collection in Spanish 
+ (ES, by Alberto Sagredo Castro) in raw G.729 format.
+EOF
+
+    cd /usr/src
+    dpkg-deb --build ${package_name}-${DEBIAN_VERSION}/
+}
+
 do_package_core_sounds_es_g729() {
     local package_name="voipnovatos-core-sounds-es-g729"
     
@@ -50,4 +79,65 @@ EOF
     dpkg-deb --build ${package_name}-${DEBIAN_VERSION}/
 }
 
+do_package_core_sounds_es_gsm() {
+    local package_name="voipnovatos-core-sounds-es-gsm"
+    
+    # Create the directory structure
+    do_create_directories ${package_name}
+    
+    # Create the control file
+    cat << EOF > /usr/src/${package_name}-${DEBIAN_VERSION}/DEBIAN/control
+Package: ${package_name}
+Version: ${DEBIAN_VERSION}
+Architecture: all
+Maintainer: ${DEBIAN_MAINTAINER}
+Section: comm
+Priority: extra
+Homepage: http://www.voipnovatos.es/
+Description: asterisk PBX sound files - en-us/g729
+ Asterisk is an Open Source PBX and telephony toolkit. It is, in a 
+ sense, middleware between Internet and telephony channels on the 
+ bottom, and Internet and telephony applications at the top.
+ .
+ Asterisk includes a set of standard sound files in various formats. 
+ This package contains the core part of that collection in Spanish 
+ (ES, by Alberto Sagredo Castro) in raw G.729 format.
+EOF
+
+    cd /usr/src
+    dpkg-deb --build ${package_name}-${DEBIAN_VERSION}/
+}
+
+do_package_core_sounds_es_ulaw() {
+    local package_name="voipnovatos-core-sounds-es-ulaw"
+    
+    # Create the directory structure
+    do_create_directories ${package_name}
+    
+    # Create the control file
+    cat << EOF > /usr/src/${package_name}-${DEBIAN_VERSION}/DEBIAN/control
+Package: ${package_name}
+Version: ${DEBIAN_VERSION}
+Architecture: all
+Maintainer: ${DEBIAN_MAINTAINER}
+Section: comm
+Priority: extra
+Homepage: http://www.voipnovatos.es/
+Description: asterisk PBX sound files - en-us/g729
+ Asterisk is an Open Source PBX and telephony toolkit. It is, in a 
+ sense, middleware between Internet and telephony channels on the 
+ bottom, and Internet and telephony applications at the top.
+ .
+ Asterisk includes a set of standard sound files in various formats. 
+ This package contains the core part of that collection in Spanish 
+ (ES, by Alberto Sagredo Castro) in raw G.729 format.
+EOF
+
+    cd /usr/src
+    dpkg-deb --build ${package_name}-${DEBIAN_VERSION}/
+}
+
 do_package_core_sounds_es_g729
+do_package_core_sounds_es_alaw
+do_package_core_sounds_es_gsm
+do_package_core_sounds_es_ulaw
