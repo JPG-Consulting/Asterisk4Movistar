@@ -172,10 +172,13 @@ fi
 [ ! -d ${ROOT_FILESYSTEM} ] && mkdir -p ${ROOT_FILESYSTEM}
 
 mount ${ROOT_PARTITION} ${ROOT_FILESYSTEM}
+mkdir ${ROOT_FILESYSTEM}/boot
+mount -t vfat ${BOOT_PARTITION} ${ROOT_FILESYSTEM}/boot
 
 debootstrap --no-check-gpg --foreign --arch=${DEBIAN_ARCHITECTURE} --variant=minbase ${DEBIAN_RELEASE} ${ROOT_FILESYSTEM} ${DEBIAN_LOCAL_MIRROR}
 if [ $? -ne 0 ]; then
     echo "ERROR: debootstrap failed."
+    umount ${BOOT_PARTITION}
     umount ${ROOT_FILESYSTEM}
     do_unset_partitions
     exit 1
@@ -189,10 +192,21 @@ fi
 chroot ${ROOT_FILESYSTEM} /debootstrap/debootstrap --second-stage
 if [ $? -ne 0 ]; then
     echo "ERROR: debootstrap second-stage failed."
+    umount ${BOOT_PARTITION}
     umount ${ROOT_FILESYSTEM}
     do_unset_partitions
     exit 1
 fi
+
+chroot ${ROOT_FILESYSTEM} /bin/bash <<EOF
+LC_ALL=C
+LANGUAGE=C
+LANG=C
+
+useradd --home /home/pi --create-home --shell /bin/bash --groups adm,dialout,cdrom,sudo,audio,video,plugdev,games,users --password raspberry pi
+echo "rpi:pitime" | chpasswd
+
+EOF
 
 echo "deb ${DEBIAN_LOCAL_MIRROR} ${DEBIAN_RELEASE} main contrib non-free rpi" > ${ROOT_FILESYSTEM}/etc/apt/sources.list
 echo "# Uncomment line below then 'apt-get update' to enable 'apt-get source'" >> ${ROOT_FILESYSTEM}/etc/apt/sources.list
@@ -229,5 +243,6 @@ EOF
 
 chroot ${ROOT_FILESYSTEM}
 
+umount ${BOOT_PARTITION}
 umount ${ROOT_FILESYSTEM}
 do_unset_partitions
