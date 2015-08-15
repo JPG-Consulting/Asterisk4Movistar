@@ -3,6 +3,7 @@
 ASTERISK_VERSION="11.6-cert11"
 
 DEBIAN_MAINTAINER="Juan Pedro Gonzalez <opensource@jpg-consulting.com>"
+PACKAGES_BUILD_DIR="/usr/src/packages"
 
 do_download_asterisk() {
     wget http://downloads.asterisk.org/pub/telephony/certified-asterisk/certified-asterisk-${ASTERISK_VERSION}.tar.gz -O /usr/src/certified-asterisk-${ASTERISK_VERSION}.tar.gz
@@ -23,11 +24,62 @@ do_make_asterisk()
     fi
     
     cd /usr/src/certified-asterisk-${ASTERISK_VERSION}
+    [ -f /usr/src/certified-asterisk-${ASTERISK_VERSION}/contrib/scripts/install_prereq ] && /usr/src/certified-asterisk-${ASTERISK_VERSION}/contrib/scripts/install_prereq
     [ -f /usr/src/certified-asterisk-${ASTERISK_VERSION}/bootstrap.sh ] && /usr/src/certified-asterisk-${ASTERISK_VERSION}/bootstrap.sh
     ./configure
     
     make menuselect
+    make
     
+    
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}
+    
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/etc
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/etc/asterisk
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/etc/default
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/etc/init.d
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/etc/asterisk
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/etc/logrotate.d
+    
+    cp /usr/src/certified-asterisk-${ASTERISK_VERSION}/contrib/init.d/rc.debian.asterisk ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/etc/init.d/asterisk
+    sed -e "s|__ASTERISK_SBIN_DIR__|/usr/sbin|" -i ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/etc/init.d/asterisk
+    sed -e "s|__ASTERISK_VARRUN_DIR__|/var/run/asterisk|" -i ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/etc/init.d/asterisk
+    sed -e "s|__ASTERISK_ETC_DIR__|/etc/asterisk|" -i ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/etc/init.d/asterisk
+    
+    cp /usr/src/certified-asterisk-${ASTERISK_VERSION}/contrib/init.d/etc_default_asterisk ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/etc/default/asterisk
+    sed -e 's|^#AST_USER="asterisk"|AST_USER="asterisk"|' -i ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/etc/default/asterisk
+    sed -e 's|^#AST_GROUP="asterisk"|AST_GROUP="asterisk"|' -i ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/etc/default/asterisk
+
+    cp /usr/src/certified-asterisk-${ASTERISK_VERSION}/contrib/scripts/asterisk.logrotate ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/etc/logrotate.d/asterisk
+    sed -e "s|__LOGDIR__|/var/log/asterisk|" -i ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/etc/logrotate.d
+    sed -e "s|__SBINDIR__|/usr/sbin|" -i ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/etc/logrotate.d
+    
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/var
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/var/lib/asterisk
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/var/lib/asterisk/documentation
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/var/lib/asterisk/images
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/var/lib/asterisk/sounds
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/var/lib/asterisk/sounds/custom
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/var/lib/asterisk/moh
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/var/lib/asterisk/static-http
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/var/log/asterisk
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/var/log/asterisk/cdr-csv
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/var/log/asterisk/cdr-custom
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/var/log/asterisk/cel-custom
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/var/spool/asterisk
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/var/spool/asterisk/dictate
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/var/spool/asterisk/meetme
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/var/spool/asterisk/monitor
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/var/spool/asterisk/outgoing
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/var/spool/asterisk/system
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/var/spool/asterisk/tmp
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/var/spool/asterisk/voicemail
+
+    cp /usr/src/certified-asterisk-${ASTERISK_VERSION}/doc/appdocsxml.dtd ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/var/lib/asterisk/documentation/
+    cp /usr/src/certified-asterisk-${ASTERISK_VERSION}/doc/core-en_US.xml ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/var/lib/asterisk/documentation/
+    cp -r /usr/src/certified-asterisk-${ASTERISK_VERSION}/images/* ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/var/lib/asterisk/images/
+    cp -r /usr/src/certified-asterisk-${ASTERISK_VERSION}/static-http/* ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/var/lib/asterisk/static-http/
+
 }
 
 do_make_chan_dongle() {
