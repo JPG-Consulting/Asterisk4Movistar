@@ -17,6 +17,8 @@ ROOT_PARTITION=""
 
 ROOT_FILESYSTEM="${BUILD_ENVIRONMENT}/rootfs"
 
+CURRENT_ARCH=$(uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ -e s/arm.*/arm/ -e s/sa110/arm/)
+
 do_setup_partitions()
 {
     if [ -n "$IMAGE" ]; then
@@ -86,7 +88,11 @@ fi
 
 # Install prerequisites
 echo "Installing prerequisites..."
-apt-get -y -qq install mount util-linux debootstrap parted e2fsprogs dosfstools qemu-user-static binfmt-support
+apt-get -y -qq install mount util-linux debootstrap parted e2fsprogs dosfstools
+
+if [ "${CURRENT_ARCH}" != "arm" ]; then
+    apt-get -y -qq install qemu-user-static binfmt-support
+fi
 
 if ! [ -b $device ]; then
     echo "ERROR: Device: $device Is not a block device"
@@ -176,7 +182,9 @@ if [ $? -ne 0 ]; then
 fi
 
 # TODO if not ARM
-cp /usr/bin/qemu-arm-static ${ROOT_FILESYSTEM}/usr/bin/
+if [ "${CURRENT_ARCH}" != "arm" ]; then
+    cp /usr/bin/qemu-arm-static ${ROOT_FILESYSTEM}/usr/bin/
+fi
 
 chroot ${ROOT_FILESYSTEM} /debootstrap/debootstrap --second-stage
 if [ $? -ne 0 ]; then
