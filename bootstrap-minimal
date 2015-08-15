@@ -95,7 +95,8 @@ if [ $EUID -ne 0 ]; then
 fi
 
 # Install prerequisites
-apt-get install debootsrap parted
+echo "Installing prerequisites..."
+apt-get -y -qq install debootsrap parted qemu-user-static binfmt-support sbuild
 
 if ! [ -b $device ]; then
     echo "ERROR: Device: $device Is not a block device"
@@ -179,6 +180,14 @@ mount ${ROOT_PARTITION} ${ROOT_FILESYSTEM}
 debootstrap --no-check-gpg --foreign --include=$(echo ${DEBOOTSTRAP_PKGS[@]} | tr ' ' ',') --arch=${DEBIAN_ARCHITECTURE} --variant=minbase ${DEBIAN_RELEASE} ${ROOT_FILESYSTEM} ${DEBIAN_LOCAL_MIRROR}
 if [ $? -ne 0 ]; then
     echo "ERROR: debootstrap failed."
+    umount ${ROOT_FILESYSTEM}
+    do_unset_partitions
+    exit 1
+fi
+
+chroot ${ROOT_FILESYSTEM} ./debootstrap/debootstrap --second-stage
+if [ $? -ne 0 ]; then
+    echo "ERROR: debootstrap second-stage failed."
     umount ${ROOT_FILESYSTEM}
     do_unset_partitions
     exit 1
