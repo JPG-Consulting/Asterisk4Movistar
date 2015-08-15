@@ -48,7 +48,7 @@ do_setup_partitions()
             ROOT_PARTITION=${DEVICE}2
         fi
     fi
-    
+
     echo "--- Boot Partition: ${BOOT_PARTITION}"
     echo "--- Root Partition: ${ROOT_PARTITION}" 
 }
