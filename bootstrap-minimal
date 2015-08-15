@@ -1,6 +1,6 @@
 #!/bin/bash
 
-BOOT_SIZE=64
+BOOT_SIZE="64M"
 
 DEBIAN_RELEASE="wheezy"
 DEBIAN_ARCHITECTURE="armhf"
@@ -105,7 +105,7 @@ n
 p
 1
 
-+$bootsize
++${BOOT_SIZE}
 t
 c
 n
