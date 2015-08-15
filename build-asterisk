@@ -61,7 +61,7 @@ do_make_chan_dongle() {
 Package: asterisk-chan-dongle
 Source: asterisk
 Version: ${ASTERISK_VERSION}
-Architecture: all
+Architecture: armhf
 Maintainer: ${DEBIAN_MAINTAINER}
 Depends: usb-modeswitch,usbutils
 Section: comm
