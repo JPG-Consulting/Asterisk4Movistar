@@ -115,6 +115,13 @@ p
 
 w
 EOF
+if [ $? -ne 0 ]; then
+    echo "ERROR: Failed to partiton ${DEVICE}"
+    if [ -n "$IMAGE" ]; then
+        losetup -d $DEVICE
+    fi
+    exit 1
+fi
 
 if [ -n "$IMAGE" ]; then
     losetup -d $DEVICE
@@ -122,6 +129,7 @@ fi
 
 do_setup_partitions
 
+echo "Formatting ${BOOT_PARTITION}"
 mkfs.vfat -I ${BOOT_PARTITION}
 if [ $? -ne 0 ]; then
     echo "ERROR: Error formating boot partition."
@@ -129,6 +137,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+echo "Formatting ${ROOT_PARTITION}"
 mkfs.ext4 ${ROOT_PARTITION}
 if [ $? -ne 0 ]; then
     echo "ERROR: Error formatting root partition."
