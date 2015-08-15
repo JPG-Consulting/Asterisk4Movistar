@@ -175,6 +175,9 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# TODO if not ARM
+cp /usr/bin/qemu-arm-static ${ROOT_FILESYSTEM}/usr/bin/
+
 chroot ${ROOT_FILESYSTEM} /debootstrap/debootstrap --second-stage
 if [ $? -ne 0 ]; then
     echo "ERROR: debootstrap second-stage failed."
