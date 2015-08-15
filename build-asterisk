@@ -47,10 +47,10 @@ do_make_chan_dongle() {
     make
     
     [ -d /usr/src/asterisk-chan-dongle-${chan_dongle_version} ] && rm -rf /usr/src/asterisk-chan-dongle-${chan_dongle_version}
-    mkdir /usr/src/asterisk-chan-dongle-${chan_dongle_version}
-    mkdir /usr/src/asterisk-chan-dongle-${chan_dongle_version}/DEBIAN
-    mkdir /usr/src/asterisk-chan-dongle-${chan_dongle_version}/etc/asterisk
-    mkdir /usr/src/asterisk-chan-dongle-${chan_dongle_version}/usr/lib/asterisk/modules/
+    mkdir -p /usr/src/asterisk-chan-dongle-${chan_dongle_version}
+    mkdir -p /usr/src/asterisk-chan-dongle-${chan_dongle_version}/DEBIAN
+    mkdir -p /usr/src/asterisk-chan-dongle-${chan_dongle_version}/etc/asterisk
+    mkdir -p /usr/src/asterisk-chan-dongle-${chan_dongle_version}/usr/lib/asterisk/modules/
     
     cp /usr/src/asterisk-chan-dongle-asterisk11/chan_dongle.so /usr/src/asterisk-chan-dongle-${chan_dongle_version}/usr/lib/asterisk/modules/
     cp /usr/src/asterisk-chan-dongle-asterisk11/etc/dongle.conf /usr/src/asterisk-chan-dongle-${chan_dongle_version}/etc/asterisk/
