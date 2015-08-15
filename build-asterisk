@@ -18,20 +18,25 @@ do_make_asterisk()
     echo "Installing prerequisites."
     apt-get -y -qq update
     apt-get install -y -qq git-core build-essential libsqlite3-dev libxml2-dev libncurses5-dev libncursesw5-dev libiksemel-dev libssl-dev libeditline-dev libedit-dev curl libcurl4-gnutls-dev
+    # I will use checkinstall for easier generation
+    apt-get install -y -qq checkinstall
+
     if [ $? -ne 0 ]; then
         echo "Error: Could not install prerequisites."
         exit 1
     fi
-    
+
     cd /usr/src/certified-asterisk-${ASTERISK_VERSION}
     [ -f /usr/src/certified-asterisk-${ASTERISK_VERSION}/contrib/scripts/install_prereq ] && /usr/src/certified-asterisk-${ASTERISK_VERSION}/contrib/scripts/install_prereq
     [ -f /usr/src/certified-asterisk-${ASTERISK_VERSION}/bootstrap.sh ] && /usr/src/certified-asterisk-${ASTERISK_VERSION}/bootstrap.sh
     ./configure
-    
+
     make menuselect
     make
+
+    checkinstall --install=no --pkgname=certified-asterisk --pkgversion="1:${ASTERISK_VERSION}" --deldoc=yes --default
     
-    
+    # Old code continues...
     mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}
     
     mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/etc
@@ -80,6 +85,13 @@ do_make_asterisk()
     cp -r /usr/src/certified-asterisk-${ASTERISK_VERSION}/images/* ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/var/lib/asterisk/images/
     cp -r /usr/src/certified-asterisk-${ASTERISK_VERSION}/static-http/* ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/var/lib/asterisk/static-http/
 
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/usr/include
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/usr/lib
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/usr/sbin
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/usr/share/doc/certified-asterisk
+    mkdir -p ${PACKAGES_BUILD_DIR}/certified-asterisk-${ASTERISK_VERSION}/usr/share/man/man8
+    
+    
 }
 
 do_make_chan_dongle() {
