@@ -86,7 +86,7 @@ fi
 
 # Install prerequisites
 echo "Installing prerequisites..."
-apt-get -y -qq install debootstrap parted qemu-user-static binfmt-support
+apt-get -y -qq install mount util-linux debootstrap parted e2fsprogs qemu-user-static binfmt-support
 
 if ! [ -b $device ]; then
     echo "ERROR: Device: $device Is not a block device"
