@@ -31,6 +31,7 @@ do_make_asterisk()
 }
 
 do_make_chan_dongle() {
+    local chan_dongle_version="11:1.1-34"
     apt-get -y -qq install automake
     
     wget https://github.com/jstasiak/asterisk-chan-dongle/archive/asterisk11.tar.gz -O /usr/src/asterisk-chan-dongle-asterisk11.tar.gz
@@ -44,6 +45,38 @@ do_make_chan_dongle() {
     
     ./configure --with-asterisk="/usr/src/certified-asterisk-${ASTERISK_VERSION}/include"
     make
+    
+    [ -d /usr/src/asterisk-chan-dongle-${chan_dongle_version} ] && rm -rf /usr/src/asterisk-chan-dongle-${chan_dongle_version}
+    mkdir /usr/src/asterisk-chan-dongle-${chan_dongle_version}
+    mkdir /usr/src/asterisk-chan-dongle-${chan_dongle_version}/DEBIAN
+    mkdir /usr/src/asterisk-chan-dongle-${chan_dongle_version}/etc/asterisk
+    mkdir /usr/src/asterisk-chan-dongle-${chan_dongle_version}/usr/lib/asterisk/modules/
+    
+    cp /usr/src/asterisk-chan-dongle-asterisk11/chan_dongle.so /usr/src/asterisk-chan-dongle-${chan_dongle_version}/usr/lib/asterisk/modules/
+    cp /usr/src/asterisk-chan-dongle-asterisk11/etc/dongle.conf /usr/src/asterisk-chan-dongle-${chan_dongle_version}/etc/asterisk/
+    
+    echo "/etc/asterisk/dongle.conf" > /usr/src/asterisk-chan-dongle-${chan_dongle_version}/DEBIAN/conffiles
+    
+    cat <<EOF > /usr/src/asterisk-chan-dongle-${chan_dongle_version}/DEBIAN/control
+Package: asterisk-chan-dongle
+Source: asterisk
+Version: ${ASTERISK_VERSION}
+Architecture: all
+Maintainer: ${DEBIAN_MAINTAINER}
+Depends: usb-modeswitch,usbutils
+Section: comm
+Priority: optional
+Homepage: http://http://wiki.e1550.mobi//
+Description: Huawei UMTS cards channel driver for Asterisk
+ A channel driver for the Asterisk software telephony PBX using 
+ Huawei UMTS cards as a GSM trunk. It is intended to be used 
+ with Huawei UMTS hardware that provide such an interface.   
+EOF
+
+    # TODO: Postinst - Setup some of the dongle config
+    
+    cd /usr/src
+    dpkg-deb --build asterisk-chan-dongle-${chan_dongle_version}/
 }
 
 do_package_config() {
