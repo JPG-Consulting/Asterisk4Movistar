@@ -176,7 +176,7 @@ fi
 
 mount ${ROOT_PARTITION} ${ROOT_FILESYSTEM}
 
-debootstrap --no-check-gpg --foreign --arch=${DEBIAN_ARCHITECTURE} --variant=minbase ${DEBIAN_RELEASE} --include=$(echo ${DEBOOTSTRAP_PKGS[@]} | tr ' ' ',') ${ROOT_FILESYSTEM} ${DEBIAN_LOCAL_MIRROR}
+debootstrap --no-check-gpg --foreign --include=$(echo ${DEBOOTSTRAP_PKGS[@]} | tr ' ' ',') --arch=${DEBIAN_ARCHITECTURE} --variant=minbase ${DEBIAN_RELEASE} ${ROOT_FILESYSTEM} ${DEBIAN_LOCAL_MIRROR}
 if [ $? -ne 0 ]; then
     echo "ERROR: debootstrap failed."
     umount ${ROOT_FILESYSTEM}
