@@ -1,6 +1,6 @@
 #!/bin/bash
 
-BOOT_SIZE="64M"
+BOOT_SIZE=64
 
 DEBIAN_RELEASE="wheezy"
 DEBIAN_ARCHITECTURE="armhf"
@@ -100,26 +100,40 @@ else
     dd if=/dev/zero of=$DEVICE bs=512 count=1
 fi
 
-fdisk $DEVICE << EOF
-n
-p
-1
-
-+${BOOT_SIZE}
-t
-c
-n
-p
-2
-
-
-w
-EOF
+echo "Creating partitions."
+parted ${DEVICE} --script -- mklabel msdos >& /dev/null
 if [ $? -ne 0 ]; then
-    echo "ERROR: Failed to partiton ${DEVICE}"
     if [ -n "$IMAGE" ]; then
         losetup -d $DEVICE
     fi
+    echo "ERROR: Failed to create disk label."
+    exit 1
+fi
+
+parted ${DEVICE} --script -- mkpart primary fat32 2MiB ${BOOT_SIZE}MiB >& /dev/null
+if [ $? -ne 0 ]; then
+    if [ -n "$IMAGE" ]; then
+        losetup -d $DEVICE
+    fi
+    echo "ERROR: Failed to create boot partition."
+    exit 1
+fi
+
+parted ${DEVICE} --script -- set 1 boot on >& /dev/null
+if [ $? -ne 0 ]; then
+    if [ -n "$IMAGE" ]; then
+        losetup -d $DEVICE
+    fi
+    echo "ERROR: Failed set boot flag."
+    exit 1
+fi
+
+parted ${DEVICE} --script -- mkpart primary ext4 ${BOOT_SIZE}MiB -1 >& /dev/null
+if [ $? -ne 0 ]; then
+    if [ -n "$IMAGE" ]; then
+        losetup -d $DEVICE
+    fi
+    echo "ERROR: Failed to create root partition."
     exit 1
 fi
 
