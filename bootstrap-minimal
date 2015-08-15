@@ -84,6 +84,9 @@ if [ $EUID -ne 0 ]; then
     exit 1
 fi
 
+# Install prerequisites
+apt-get install debootsrap parted
+
 if ! [ -b $device ]; then
     echo "ERROR: Device: $device Is not a block device"
     exit 1
