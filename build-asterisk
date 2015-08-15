@@ -30,6 +30,22 @@ do_make_asterisk()
     
 }
 
+do_make_chan_dongle() {
+    apt-get -y -qq install automake
+    
+    wget https://github.com/jstasiak/asterisk-chan-dongle/archive/asterisk11.tar.gz -O /usr/src/asterisk-chan-dongle-asterisk11.tar.gz
+    
+    cd /usr/src
+    tar -zxf /usr/src/asterisk-chan-dongle-asterisk11.tar.gz
+    rm /usr/src/asterisk-chan-dongle-asterisk11.tar.gz
+    
+    cd /usr/src/asterisk-chan-dongle-asterisk11
+    aclocal && autoconf && automake -a
+    
+    ./configure --with-asterisk="/usr/src/certified-asterisk-${ASTERISK_VERSION}/include"
+    make
+}
+
 do_package_config() {
     [ -d /usr/src/certified-asterisk-config-${ASTERISK_VERSION} ] && rm -rf /usr/src/certified-asterisk-config-${ASTERISK_VERSION}
     
@@ -72,3 +88,4 @@ EOF
 do_download_asterisk
 do_package_config
 do_make_asterisk
+do_make_chan_dongle
