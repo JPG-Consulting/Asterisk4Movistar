@@ -256,11 +256,13 @@ DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes install linux-image-${LINU
 DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes install binutils ca-certificates locales ntpdate sudo
 DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes install openssh-server ssh-regen-startup
 DEBIAN_FRONTEND=noninteractive apt-get clean
+EOF
 
 # Prepare boot configuration
-echo '# Set params for \"raspbian debian-style kernel\" boot' >> /boot/config.txt
-echo 'kernel=vmlinuz-${LINUX_IMAGE}' >> /boot/config.txt
-echo 'initramfs initrd.img-${LINUX_IMAGE} followkernel' >> /boot/config.txt
+cat <<EOF >> ${ROOT_FILESYSTEM}/boot/config.txt
+# Set params for "raspbian debian-style kernel" boot
+kernel=vmlinuz-${LINUX_IMAGE}
+initramfs initrd.img-${LINUX_IMAGE} followkernel
 EOF
 
 echo "Entering chroot for customization"
