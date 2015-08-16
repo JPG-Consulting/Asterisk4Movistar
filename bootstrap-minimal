@@ -28,9 +28,11 @@ is_host_arm() {
 
 do_create_image()
 {
-    echo "Creating image file."
+    [ ! -d $BUILD_DIRECTORY ] && mkdir -p $BUILD_DIRECTORY
 
-    IMAGE_FILE="${BUILD_DIRECTORY}/$(date +%Y-%m-%d)-raspbian-basic-${DEBIAN_RELEASE}.img"
+    IMAGE_FILE="${BUILD_DIRECTORY}/$(date +%Y-%m-%d)-raspbian-basic-${RELEASE}.img"
+
+    echo "Creating image file ${IMAGE_FILE}."
 
     dd if=/dev/zero of=$IMAGE_FILE bs=1MB count=700 >& /dev/null
     if [ $? -ne 0 ]; then
@@ -43,12 +45,13 @@ do_create_partitions() {
     local device=$TARGET_DEVICE
 
     if [ -n "${IMAGE_FILE}" ]; then
-		device=$(losetup -f --show $IMAGE_FILE)
-	fi
+        device=$IMAGE_FILE
+        echo "Partitioning image ${device}."
+    else
+		echo "Partitioning device ${device}."
+    fi
 
-    echo "Partitioning ${device}."
-
-	fdisk $device << EOF
+    fdisk $device << EOF
 n
 p
 1
@@ -64,15 +67,8 @@ p
 w
 EOF
     if [ $? -ne 0 ]; then
-        if [ -n "${IMAGE_FILE}" ]; then
-            losetup -d /dev/loop0
-        fi
         echo "Error: failed to create partitions."
         exit 1
-    fi
-
-	if [ -n "${IMAGE_FILE}" ]; then
-        losetup -d /dev/loop0
     fi
 }
 
@@ -92,6 +88,9 @@ if is_host_arm; then
     apt-get -y -qq install qemu-user-static binfmt-support
 fi
 
-do_create_image
+if [ -z "${TARGET_DEVICE}" ]; then
+    do_create_image
+fi
+
 do_create_partitions
 
