@@ -1,0 +1,275 @@
+#!/bin/bash
+
+BOOT_SIZE=64
+
+DEBIAN_RELEASE="wheezy"
+DEBIAN_ARCHITECTURE="armhf"
+DEBIAN_LOCAL_MIRROR="http://mirrordirector.raspbian.org/raspbian/"
+DEBIAN_LOCAL_SOURCE_MIRROR="http://archive.raspbian.org/raspbian/"
+
+BUILD_ENVIRONMENT="/root/rpi"
+
+DEVICE=$1
+IMAGE=""
+
+BOOT_PARTITION=""
+ROOT_PARTITION=""
+
+ROOT_FILESYSTEM="${BUILD_ENVIRONMENT}/rootfs"
+
+LINUX_IMAGE="3.18.0-trunk-rpi"
+#KERNEL_IMAGE=linux-image-3.18.0-trunk-rpi"
+#KERNEL_IMAGE=linux-image-3.18.0-trunk-rpi2"
+#KERNEL_IMAGE="linux-image-rpi"
+#KERNEL_IMAGE="linux-image-rpi-rpfv"
+#KERNEL_IMAGE="linux-image-rpi2-rpfv"
+
+CURRENT_ARCH=$(uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ -e s/arm.*/arm/ -e s/sa110/arm/)
+
+do_setup_partitions()
+{
+    if [ -n "$IMAGE" ]; then
+        DEVICE=$(losetup -f --show $IMAGE)
+        if [ -z "${DEVICE}" ]; then
+            echo "ERROR: Failed to setup a loop device."
+            exit 1
+        fi
+
+        partx -a ${DEVICE}
+        if [ $? -ne 0 ]; then
+            echo "ERROR: Failed to create loop device for partitions."
+            losetup -d ${DEVICE}
+            exit 1
+        fi
+
+        BOOT_PARTITION=${DEVICE}p1
+        ROOT_PARTITION=${DEVICE}p2
+    else
+        if [ ! -b ${DEVICE}1 ]; then
+            BOOT_PARTITION=${DEVICE}p1
+            ROOT_PARTITION=${DEVICE}p2
+            if [ ! -b ${BOOT_PARTITION} ]; then
+                echo "ERROR: Can't find boot partition, neither as ${DEVICE}1, nor as ${DEVICE}p1. Exiting."
+                exit 1
+            fi
+        else
+            BOOT_PARTITION=${DEVICE}1
+            ROOT_PARTITION=${DEVICE}2
+        fi
+    fi
+
+    echo "--- Boot Partition: ${BOOT_PARTITION}"
+    echo "--- Root Partition: ${ROOT_PARTITION}" 
+}
+
+do_unset_partitions() {
+    if [ -n "$IMAGE" ]; then
+        partx -d ${ROOT_PARTITION}
+        if [ $? -ne 0 ]; then
+            echo "ERROR: Failed to delete loop device ${ROOT_PARTITION}."
+            partx -d ${BOOT_PARTITION}
+            losetup -d ${DEVICE}
+            exit 1
+        fi
+
+        partx -d ${BOOT_PARTITION}
+        if [ $? -ne 0 ]; then
+            echo "ERROR: Failed to delete loop device ${BOOT_PARTITION}."
+            losetup -d ${DEVICE}
+            exit 1
+        fi
+
+        losetup -d ${DEVICE}
+        if [ $? -ne 0 ]; then
+            echo "ERROR: Failed to delete loop device ${DEVICE}."
+            delete_mount
+            exit 1
+        fi
+    fi
+}
+
+if [ $EUID -ne 0 ]; then
+    echo "ERROR: This tool must be run as Root"
+    exit 1
+fi
+
+# Install prerequisites
+echo "Installing prerequisites..."
+apt-get -y -qq install mount util-linux debootstrap parted e2fsprogs dosfstools
+
+if [ "${CURRENT_ARCH}" != "arm" ]; then
+    apt-get -y -qq install qemu-user-static binfmt-support
+fi
+
+if ! [ -b $device ]; then
+    echo "ERROR: Device: $device Is not a block device"
+    exit 1
+fi
+
+if [ "$device" == "" ]; then
+    echo "WARNING: No block device given, creating image instead."
+    mkdir -p $BUILD_ENVIRONMENT
+    IMAGE="${BUILD_ENVIRONMENT}/$(date +%Y-%m-%d)-raspbian-basic-${DEBIAN_RELEASE}.img"
+    dd if=/dev/zero of=$IMAGE bs=1MB count=1000
+    DEVICE=$(losetup -f --show $IMAGE)
+    echo "Image $IMAGE Created and mounted as $DEVICE"
+else
+    dd if=/dev/zero of=$DEVICE bs=512 count=1
+fi
+
+echo "Creating partitions."
+parted ${DEVICE} --script -- mklabel msdos >& /dev/null
+if [ $? -ne 0 ]; then
+    if [ -n "$IMAGE" ]; then
+        losetup -d $DEVICE
+    fi
+    echo "ERROR: Failed to create disk label."
+    exit 1
+fi
+
+parted ${DEVICE} --script -- mkpart primary fat32 2MiB ${BOOT_SIZE}MiB >& /dev/null
+if [ $? -ne 0 ]; then
+    if [ -n "$IMAGE" ]; then
+        losetup -d $DEVICE
+    fi
+    echo "ERROR: Failed to create boot partition."
+    exit 1
+fi
+
+parted ${DEVICE} --script -- set 1 boot on >& /dev/null
+if [ $? -ne 0 ]; then
+    if [ -n "$IMAGE" ]; then
+        losetup -d $DEVICE
+    fi
+    echo "ERROR: Failed set boot flag."
+    exit 1
+fi
+
+parted ${DEVICE} --script -- mkpart primary ext4 ${BOOT_SIZE}MiB -1 >& /dev/null
+if [ $? -ne 0 ]; then
+    if [ -n "$IMAGE" ]; then
+        losetup -d $DEVICE
+    fi
+    echo "ERROR: Failed to create root partition."
+    exit 1
+fi
+
+if [ -n "$IMAGE" ]; then
+    losetup -d $DEVICE
+fi
+
+do_setup_partitions
+
+echo "Formatting ${BOOT_PARTITION}"
+mkfs.vfat -I ${BOOT_PARTITION}
+if [ $? -ne 0 ]; then
+    echo "ERROR: Error formating boot partition."
+    do_unset_partitions
+    exit 1
+fi
+
+echo "Formatting ${ROOT_PARTITION}"
+mkfs.ext4 ${ROOT_PARTITION}
+if [ $? -ne 0 ]; then
+    echo "ERROR: Error formatting root partition."
+    do_unset_partitions
+    exit 1
+fi
+
+[ ! -d ${ROOT_FILESYSTEM} ] && mkdir -p ${ROOT_FILESYSTEM}
+
+mount -t ext4 ${ROOT_PARTITION} ${ROOT_FILESYSTEM}
+mkdir ${ROOT_FILESYSTEM}/boot
+mount -t vfat ${BOOT_PARTITION} ${ROOT_FILESYSTEM}/boot
+
+debootstrap --no-check-gpg --foreign --arch=${DEBIAN_ARCHITECTURE} --variant=minbase ${DEBIAN_RELEASE} ${ROOT_FILESYSTEM} ${DEBIAN_LOCAL_MIRROR}
+if [ $? -ne 0 ]; then
+    echo "ERROR: debootstrap failed."
+    umount ${BOOT_PARTITION}
+    umount ${ROOT_FILESYSTEM}
+    do_unset_partitions
+    exit 1
+fi
+
+# TODO if not ARM
+if [ "${CURRENT_ARCH}" != "arm" ]; then
+    cp /usr/bin/qemu-arm-static ${ROOT_FILESYSTEM}/usr/bin/
+fi
+
+chroot ${ROOT_FILESYSTEM} /debootstrap/debootstrap --second-stage
+if [ $? -ne 0 ]; then
+    echo "ERROR: debootstrap second-stage failed."
+    umount ${BOOT_PARTITION}
+    umount ${ROOT_FILESYSTEM}
+    do_unset_partitions
+    exit 1
+fi
+
+chroot ${ROOT_FILESYSTEM} /bin/bash <<EOF
+LC_ALL=C
+LANGUAGE=C
+LANG=C
+
+useradd --home /home/pi --create-home --shell /bin/bash --groups adm,dialout,cdrom,sudo,audio,video,plugdev,games,users,pi --password raspberry pi
+
+EOF
+
+echo "deb ${DEBIAN_LOCAL_MIRROR} ${DEBIAN_RELEASE} main contrib non-free rpi" > ${ROOT_FILESYSTEM}/etc/apt/sources.list
+echo "# Uncomment line below then 'apt-get update' to enable 'apt-get source'" >> ${ROOT_FILESYSTEM}/etc/apt/sources.list
+echo "#deb-src ${DEBIAN_LOCAL_SOURCE_MIRROR} ${DEBIAN_RELEASE} main contrib non-free rpi" >> ${ROOT_FILESYSTEM}/etc/apt/sources.list
+
+echo "dwc_otg.lpm_enable=0 console=ttyAMA0,115200 console=tty1 root=/dev/mmcblk0p2 rootfstype=ext4 elevator=deadline rootwait"  > ${ROOT_FILESYSTEM}/boot/cmdline.txt
+
+cat <<EOF > ${ROOT_FILESYSTEM}/etc/fstab
+proc            /proc           proc    defaults          0       0
+/dev/mmcblk0p1  /boot           vfat    defaults          0       2
+/dev/mmcblk0p2  /               ext4    defaults,noatime  0       1
+# a swapfile is not a swap partition, so no using swapon|off from here on, use  dphys-swapfile swap[on|off]  for that
+EOF
+
+echo "raspberrypi" > ${ROOT_FILESYSTEM}/etc/hostname
+
+cat <<EOF > ${ROOT_FILESYSTEM}/etc/network/interfaces
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet dhcp
+EOF
+
+cat <<EOF > ${ROOT_FILESYSTEM}/etc/modules
+# /etc/modules: kernel modules to load at boot time.
+#
+# This file contains the names of kernel modules that should be loaded
+# at boot time, one per line. Lines beginning with "#" are ignored.
+# Parameters can be specified after the module name.
+
+snd-bcm2835
+EOF
+
+chroot ${ROOT_FILESYSTEM} /bin/bash <<EOF
+apt-get update
+
+# Install packages
+DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes install libraspberrypi0 libraspberrypi-dev libraspberrypi-bin raspberrypi-bootloader-nokernel
+DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes install linux-image-${LINUX_IMAGE}
+DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes install binutils ca-certificates locales ntpdate sudo
+DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes install openssh-server ssh-regen-startup
+DEBIAN_FRONTEND=noninteractive apt-get clean
+EOF
+
+# Prepare boot configuration
+cat <<EOF >> ${ROOT_FILESYSTEM}/boot/config.txt
+# Set params for "raspbian debian-style kernel" boot
+kernel=vmlinuz-${LINUX_IMAGE}
+initramfs initrd.img-${LINUX_IMAGE} followkernel
+EOF
+
+echo "Entering chroot for customization"
+chroot ${ROOT_FILESYSTEM}
+
+[ -f ${ROOT_FILESYSTEM}/usr/bin/qemu-arm-static ] && rm ${ROOT_FILESYSTEM}/usr/bin/qemu-arm-static
+
+umount ${BOOT_PARTITION}
+umount ${ROOT_FILESYSTEM}
+do_unset_partitions
