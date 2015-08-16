@@ -219,7 +219,6 @@ fi
 do_mount_partitions
 
 echo "Running debootstrap."
-echo "debootstrap --no-check-gpg --foreign --arch=${ARCH} --variant=minbase ${RELEASE} ${CHROOT_DIR} ${MIRROR}"
 debootstrap --no-check-gpg --foreign --arch=${ARCH} --variant=minbase ${RELEASE} ${CHROOT_DIR} ${MIRROR}
 if [ $? -ne 0 ]; then
     do_unmount_partitions
