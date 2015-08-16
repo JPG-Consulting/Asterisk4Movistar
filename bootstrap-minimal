@@ -253,8 +253,6 @@ apt-get install -y -qq update
 # Install packages
 DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes install libraspberrypi0 libraspberrypi-dev libraspberrypi-bin raspberrypi-bootloader-nokernel
 DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes install linux-image-${LINUX_IMAGE}
-DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes install binutils ca-certificates locales ntpdate sudo
-DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes install openssh-server ssh-regen-startup
 DEBIAN_FRONTEND=noninteractive apt-get clean
 EOF
 
