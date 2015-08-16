@@ -184,7 +184,8 @@ if [ $EUID -ne 0 ]; then
 fi
 
 # Prerequisites
-apt-get -y -qq install mount util-linux debootstrap parted e2fsprogs dosfstools
+echo "Installing prerequisites."
+apt-get -y -qq install mount util-linux debootstrap parted e2fsprogs dosfstools git
 if is_host_arm; then
     apt-get -y -qq install qemu-user-static binfmt-support
 fi
@@ -239,6 +240,21 @@ fi
 mount -t proc proc ${CHROOT_DIR}/proc
 mount -t sysfs sysfs ${CHROOT_DIR}/sys
 mount -o bind /dev ${CHROOT_DIR}/dev
+
+# Download firmware
+echo "Downloading latest firmware"
+cd ${BUILD_DIRECTORY}
+git clone https://github.com/raspberrypi/firmware.git
+if [ $? -ne 0 ]; then
+    do_unmount_partitions
+    do_unset_partitions
+    echo "Error: failed to download firmware repository."
+    exit 1
+fi
+
+sudo cp -R ${BUILD_DIRECTORY}/firmware/hardfp/opt/* ${CHROOT_DIR}/opt/
+sudo cp -R ${BUILD_DIRECTORY}/firmware/modules/* ${CHROOT_DIR}/lib/modules/
+sudo cp -R ${BUILD_DIRECTORY}/firmware/boot/* ${CHROOT_DIR}/boot/
 
 # We are now ready for chroot
 # Setup apt source.
