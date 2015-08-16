@@ -240,7 +240,10 @@ cat <<EOF > ${ROOT_FILESYSTEM}/etc/modules
 snd-bcm2835
 EOF
 
+echo "Entering chroot for customization"
 chroot ${ROOT_FILESYSTEM}
+
+[ -f ${ROOT_FILESYSTEM}/usr/bin/qemu-arm-static ] && rm ${ROOT_FILESYSTEM}/usr/bin/qemu-arm-static
 
 umount ${BOOT_PARTITION}
 umount ${ROOT_FILESYSTEM}
