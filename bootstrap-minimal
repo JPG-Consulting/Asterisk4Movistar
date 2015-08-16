@@ -5,7 +5,7 @@
 # Debootstrap params
 #-----------------------------------------------------------
 #MIRROR="http://mirrordirector.raspbian.org/raspbian"
-MIRROR="http://mirrors.fe.up.pt/raspbian/"
+MIRROR="http://mirrors.fe.up.pt/raspbian/raspbian"
 ARCH="armhf"
 RELEASE="wheezy"
 
@@ -254,6 +254,14 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Setup apt
+cat <<EOF > ${CHROOT_DIR}/etc/apt/sources.list
+deb ${MIRROR} ${RELEASE} main contrib non-free rpi
+# Uncomment line below then 'apt-get update' to enable 'apt-get source'
+#deb-src ${MIRROR} ${RELEASE} main contrib non-free rpi
+EOF
+chroot ${CHROOT_DIR} apt-get update
+
 # Write boot filesystem
 cat <<EOF > ${CHROOT_DIR}/boot/config.txt
 kernel=kernel.img
@@ -266,7 +274,14 @@ EOF
 
 echo "dwc_otg.lpm_enable=0 root=/dev/mmcblk0p2 rootfstype=ext4 rootwait" > ${CHROOT_DIR}/boot/cmdline.txt
 
+# Chroot for customization
+chroot ${CHROOT_DIR}
+
 # Cleanup chroot
+chroot ${ROOT_FILESYSTEM} /bin/bash <<EOF
+apt-get clean
+EOF
+
 umount --force ${CHROOT_DIR}/proc
 umount --force ${CHROOT_DIR}/sys
 umount --force ${CHROOT_DIR}/dev
