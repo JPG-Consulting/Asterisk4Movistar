@@ -4,7 +4,8 @@
 
 # Debootstrap params
 #-----------------------------------------------------------
-MIRROR="http://mirrordirector.raspbian.org/raspbian/"
+#MIRROR="http://mirrordirector.raspbian.org/raspbian"
+MIRROR="http://mirrors.fe.up.pt/raspbian/"
 ARCH="armhf"
 RELEASE="wheezy"
 
