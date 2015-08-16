@@ -35,7 +35,7 @@ do_create_image()
 
     echo "Creating image file ${IMAGE_FILE}."
 
-    dd if=/dev/zero of=$IMAGE_FILE bs=512 count=1400 >& /dev/null
+    dd if=/dev/zero of=$IMAGE_FILE bs=512 count=1400000 >& /dev/null
     if [ $? -ne 0 ]; then
         echo "Error: Failed to create image file ${image}."
         exit 1
