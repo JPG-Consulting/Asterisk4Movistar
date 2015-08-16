@@ -71,8 +71,6 @@ EOF
         echo "Error: failed to create partitions."
         exit 1
     fi
-
-    fdisk -l $device
 }
 
 do_set_partitions() {
