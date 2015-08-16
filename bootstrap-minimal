@@ -244,6 +244,16 @@ mount -t sysfs sysfs ${CHROOT_DIR}/sys
 mount -o bind /dev ${CHROOT_DIR}/dev
 
 # We are now ready for chroot
+# Setup apt source.
+# debootstrap second-stage will use debian or repository not raspbian if 
+# this is not done before second-stage
+cat <<EOF > ${CHROOT_DIR}/etc/apt/sources.list
+deb ${MIRROR} ${RELEASE} main contrib non-free rpi
+# Uncomment line below then 'apt-get update' to enable 'apt-get source'
+#deb-src ${MIRROR} ${RELEASE} main contrib non-free rpi
+EOF
+chroot ${CHROOT_DIR} apt-get update
+
 # Proceed with second stage of debootstrap
 echo "Running debootstrap second stage."
 chroot ${CHROOT_DIR} /debootstrap/debootstrap --second-stage
@@ -253,14 +263,6 @@ if [ $? -ne 0 ]; then
     echo "Error: debootstrap second-stage failed."
     exit 1
 fi
-
-# Setup apt
-cat <<EOF > ${CHROOT_DIR}/etc/apt/sources.list
-deb ${MIRROR} ${RELEASE} main contrib non-free rpi
-# Uncomment line below then 'apt-get update' to enable 'apt-get source'
-#deb-src ${MIRROR} ${RELEASE} main contrib non-free rpi
-EOF
-chroot ${CHROOT_DIR} apt-get update
 
 # Setup networking
 echo "raspberrypi" > ${CHROOT_DIR}/etc/hostname
