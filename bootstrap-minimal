@@ -35,7 +35,7 @@ do_create_image()
 
     echo "Creating image file ${IMAGE_FILE}."
 
-    dd if=/dev/zero of=$IMAGE_FILE bs=1MB count=700 >& /dev/null
+    dd if=/dev/zero of=$IMAGE_FILE bs=512 count=1400 >& /dev/null
     if [ $? -ne 0 ]; then
         echo "Error: Failed to create image file ${image}."
         exit 1
@@ -74,8 +74,13 @@ EOF
 
 do_set_partitions() {
     if [ -n "${IMAGE_FILE}" ]; then
+        echo "Mounting loop device."
+
         TARGET_DEVICE=$(losetup -f --show ${IMAGE_FILE})
-        if [ -z "${TARGET_DEVICE}" ]; then
+		if [ $? -ne 0 ]; then
+            echo "Error: Failed to setup a loop device."
+            exit 1
+        elif [ -z "${TARGET_DEVICE}" ]; then
             echo "Error: Failed to setup a loop device."
             exit 1
         fi
@@ -186,6 +191,8 @@ fi
 if [ -z "${TARGET_DEVICE}" ]; then
     do_create_image
 fi
+
+do_create_partitions
 
 do_set_partitions
 
