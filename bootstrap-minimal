@@ -171,7 +171,7 @@ fi
 
 [ ! -d ${ROOT_FILESYSTEM} ] && mkdir -p ${ROOT_FILESYSTEM}
 
-mount ${ROOT_PARTITION} ${ROOT_FILESYSTEM}
+mount -t ext4 ${ROOT_PARTITION} ${ROOT_FILESYSTEM}
 mkdir ${ROOT_FILESYSTEM}/boot
 mount -t vfat ${BOOT_PARTITION} ${ROOT_FILESYSTEM}/boot
 
@@ -203,8 +203,7 @@ LC_ALL=C
 LANGUAGE=C
 LANG=C
 
-useradd --home /home/pi --create-home --shell /bin/bash --groups adm,dialout,cdrom,sudo,audio,video,plugdev,games,users --password raspberry pi
-echo "rpi:pitime" | chpasswd
+useradd --home /home/pi --create-home --shell /bin/bash --groups adm,dialout,cdrom,sudo,audio,video,plugdev,games,users,pi --password raspberry pi
 
 EOF
 
