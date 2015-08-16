@@ -11,6 +11,7 @@ RELEASE="wheezy"
 # Build environment
 #-----------------------------------------------------------
 BUILD_DIRECTORY="/root/rpi"
+CHROOT_DIR="${BUILD_DIRECTORY}/rootfs"
 IMAGE_FILE=""
 TARGET_DEVICE=$1
 
@@ -44,14 +45,13 @@ do_create_image()
 do_create_partitions() {
     local device=$TARGET_DEVICE
 
+    echo "Creating partitions."
+
     if [ -n "${IMAGE_FILE}" ]; then
         device=$IMAGE_FILE
-        echo "Partitioning image ${device}."
-    else
-		echo "Partitioning device ${device}."
     fi
 
-    fdisk $device << EOF
+    fdisk $device << EOF >& /dev/null
 n
 p
 1
@@ -72,6 +72,101 @@ EOF
     fi
 }
 
+do_set_partitions() {
+    if [ -n "${IMAGE_FILE}" ]; then
+        TARGET_DEVICE=$(losetup -f --show ${IMAGE_FILE})
+        if [ -z "${TARGET_DEVICE}" ]; then
+            echo "Error: Failed to setup a loop device."
+            exit 1
+        fi
+
+        partx -a ${TARGET_DEVICE}
+        if [ $? -ne 0 ]; then
+            echo "Error: Failed to create loop device for partitions."
+            losetup -d ${TARGET_DEVICE}
+            exit 1
+        fi
+
+        BOOT_PARTITION=${TARGET_DEVICE}p1
+        ROOT_PARTITION=${TARGET_DEVICE}p2        
+    elif [ ! -b ${TARGET_DEVICE}1 ]; then
+        BOOT_PARTITION=${TARGET_DEVICE}p1
+        ROOT_PARTITION=${TARGET_DEVICE}p2
+
+        if [ ! -b ${BOOT_PARTITION} ]; then
+            echo "Error: Can't find boot partition, neither as ${TARGET_DEVICE}1, nor as ${TARGET_DEVICE}p1. Exiting."
+            exit 1
+        fi
+    else
+        BOOT_PARTITION=${TARGET_DEVICE}1
+        ROOT_PARTITION=${TARGET_DEVICE}2        
+    fi
+}
+
+do_unset_partitions() {
+    if [ -n "${IMAGE_FILE}" ]; then
+        partx -d ${ROOT_PARTITION}
+        if [ $? -ne 0 ]; then
+            echo "Error: Failed to delete loop device ${ROOT_PARTITION}."
+            partx -d ${BOOT_PARTITION}
+            losetup -d ${TARGET_DEVICE}
+            exit 1
+        fi
+
+        partx -d ${BOOT_PARTITION}
+        if [ $? -ne 0 ]; then
+            echo "Error: Failed to delete loop device ${BOOT_PARTITION}."
+            losetup -d ${TARGET_DEVICE}
+            exit 1
+        fi
+
+        losetup -d ${TARGET_DEVICE}
+        if [ $? -ne 0 ]; then
+            echo "Error: Failed to delete loop device ${DEVICE}."
+            exit 1
+        fi        
+    fi 
+}
+
+do_mount_partitions() {
+    echo "Mounting partitions."
+
+    [ ! -d ${CHROOT_DIR} ] && mkdir -p ${CHROOT_DIR}
+    mount ${ROOT_PARTITION} ${CHROOT_DIR}
+    if [ $? -ne 0 ]; then
+        do_unset_partitions
+        echo "Error: Unable to mount root partition ${ROOT_PARTITION} on ${CHROOT_DIR}."
+		exit 1
+    fi
+
+    [ ! -d ${CHROOT_DIR}/boot ] && mkdir -p ${CHROOT_DIR}/boot
+    mount ${BOOT_PARTITION} ${CHROOT_DIR}/boot
+    if [ $? -ne 0 ]; then
+		umount -l ${ROOT_PARTITION}
+        do_unset_partitions
+        echo "Error: Unable to mount boot partition ${BOOT_PARTITION} on ${CHROOT_DIR}/boot."
+		exit 1
+    fi
+}
+
+do_unmount_partitions() {
+    echo "Umounting partitions"
+
+    umount --force ${CHROOT_DIR}/boot
+    if [ $? -ne 0 ]; then
+        umount --force ${CHROOT_DIR}
+        do_unset_partitions
+        echo "Error: Unable to unmount boot partition ${CHROOT_DIR}/boot."
+		exit 1
+    fi
+
+    umount --force ${CHROOT_DIR}
+    if [ $? -ne 0 ]; then
+        do_unset_partitions
+        echo "Error: Unable to unmount root partition ${CHROOT_DIR}."
+		exit 1
+    fi
+}
 
 # Entry point
 #-----------------------------------------------------------
@@ -92,5 +187,89 @@ if [ -z "${TARGET_DEVICE}" ]; then
     do_create_image
 fi
 
-do_create_partitions
+do_set_partitions
 
+# Format partitions
+echo "Formatting ${BOOT_PARTITION}"
+mkfs.vfat -I ${BOOT_PARTITION} >& /dev/null
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to format boot partition."
+    do_unset_partitions
+    exit 1
+fi
+
+echo "Formatting ${ROOT_PARTITION}"
+mkfs.ext4 ${ROOT_PARTITION} >& /dev/null
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to format root partition."
+    do_unset_partitions
+    exit 1
+fi
+
+do_mount_partitions
+
+echo "Running debootstrap."
+debootstrap --no-check-gpg --foreign --arch=${ARCH} --variant=minbase ${RELEASE} ${CHROOT_DIR} ${MIRROR}
+if [ $? -ne 0 ]; then
+    do_unmount_partitions
+    do_unset_partitions
+    echo "Error: debootstrap failed on first stage."
+    exit 1
+fi
+
+if is_host_arm; then
+    cp /usr/bin/qemu-arm-static ${CHROOT_DIR}/usr/bin/
+    if [ $? -ne 0 ]; then
+        do_unmount_partitions
+        do_unset_partitions
+        echo "Error: Unable to copy /usr/bin/qemu-arm-static to ${CHROOT_DIR}/usr/bin/qemu-arm-static."
+        exit 1
+    fi
+fi
+
+# Before entering chroot we need to mount the following
+mount -t proc proc ${CHROOT_DIR}/proc
+mount -t sysfs sysfs ${CHROOT_DIR}/sys
+mount -o bind /dev ${CHROOT_DIR}/dev
+
+# We are now ready for chroot
+# Proceed with second stage of debootstrap
+echo "Running debootstrap second stage."
+chroot ${CHROOT_DIR} /debootstrap/debootstrap --second-stage
+if [ $? -ne 0 ]; then
+    do_unmount_partitions
+    do_unset_partitions
+    echo "Error: debootstrap second-stage failed."
+    exit 1
+fi
+
+# Write boot filesystem
+cat <<EOF > ${CHROOT_DIR}/boot/config.txt
+kernel=kernel.img
+arm_freq=800
+core_freq=250
+sdram_freq=400
+over_voltage=0
+gpu_mem=16
+EOF
+
+echo "dwc_otg.lpm_enable=0 root=/dev/mmcblk0p2 rootfstype=ext4 rootwait" > ${CHROOT_DIR}/boot/cmdline.txt
+
+# Cleanup chroot
+umount --force ${CHROOT_DIR}/proc
+umount --force ${CHROOT_DIR}/sys
+umount --force ${CHROOT_DIR}/dev
+
+if is_host_arm; then
+    rm ${CHROOT_DIR}/usr/bin/qemu-arm-static
+    if [ $? -ne 0 ]; then
+        do_unmount_partitions
+        do_unset_partitions
+        echo "Error: Unable to delete ${CHROOT_DIR}/usr/bin/qemu-arm-static."
+        exit 1
+    fi
+fi
+
+# Finally
+do_unmount_partitions
+do_unset_partitions
