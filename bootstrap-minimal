@@ -17,6 +17,13 @@ ROOT_PARTITION=""
 
 ROOT_FILESYSTEM="${BUILD_ENVIRONMENT}/rootfs"
 
+LINUX_IMAGE="3.18.0-trunk-rpi"
+#KERNEL_IMAGE=linux-image-3.18.0-trunk-rpi"
+#KERNEL_IMAGE=linux-image-3.18.0-trunk-rpi2"
+#KERNEL_IMAGE="linux-image-rpi"
+#KERNEL_IMAGE="linux-image-rpi-rpfv"
+#KERNEL_IMAGE="linux-image-rpi2-rpfv"
+
 CURRENT_ARCH=$(uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ -e s/arm.*/arm/ -e s/sa110/arm/)
 
 do_setup_partitions()
@@ -238,6 +245,22 @@ cat <<EOF > ${ROOT_FILESYSTEM}/etc/modules
 # Parameters can be specified after the module name.
 
 snd-bcm2835
+EOF
+
+chroot ${ROOT_FILESYSTEM} /bin/bash <<EOF
+apt-get install -y -qq update
+
+# Install packages
+DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes install libraspberrypi0 libraspberrypi-dev libraspberrypi-bin raspberrypi-bootloader-nokernel
+DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes install linux-image-${LINUX_IMAGE}
+DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes install binutils ca-certificates locales ntpdate sudo
+DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes install openssh-server ssh-regen-startup
+DEBIAN_FRONTEND=noninteractive apt-get clean
+
+# Prepare boot configuration
+echo '# Set params for \"raspbian debian-style kernel\" boot' >> /boot/config.txt
+echo 'kernel=vmlinuz-${LINUX_IMAGE}' >> /boot/config.txt
+echo 'initramfs initrd.img-${LINUX_IMAGE} followkernel' >> /boot/config.txt
 EOF
 
 echo "Entering chroot for customization"
