@@ -45,11 +45,11 @@ do_create_image()
 do_create_partitions() {
     local device=$TARGET_DEVICE
 
-    echo "Creating partitions."
-
     if [ -n "${IMAGE_FILE}" ]; then
         device=$IMAGE_FILE
     fi
+
+    echo "Creating partition table on ${device}."
 
     fdisk $device << EOF >& /dev/null
 n
@@ -70,11 +70,13 @@ EOF
         echo "Error: failed to create partitions."
         exit 1
     fi
+
+    fdisk -l $device
 }
 
 do_set_partitions() {
     if [ -n "${IMAGE_FILE}" ]; then
-        echo "Mounting loop device."
+        echo "Setting up loop device."
 
         TARGET_DEVICE=$(losetup -f --show ${IMAGE_FILE})
 		if [ $? -ne 0 ]; then
