@@ -242,14 +242,25 @@ mount -t sysfs sysfs ${CHROOT_DIR}/sys
 mount -o bind /dev ${CHROOT_DIR}/dev
 
 # Download firmware
-echo "Downloading latest firmware"
-cd ${BUILD_DIRECTORY}
-git clone https://github.com/raspberrypi/firmware.git
-if [ $? -ne 0 ]; then
-    do_unmount_partitions
-    do_unset_partitions
-    echo "Error: failed to download firmware repository."
-    exit 1
+if [ -d ${BUILD_DIRECTORY}/firmware ]; then
+    if [ -d ${BUILD_DIRECTORY}/firmware/.git ]; then
+        echo "Updating firmware"
+        cd ${BUILD_DIRECTORY}/firmware
+        git pull
+	else
+		echo "WARNING: Firmware directory exists but it is not a git repository."
+		echo "         Nothing done."
+	fi
+else
+    echo "Downloading latest firmware"
+    cd ${BUILD_DIRECTORY}
+    git clone https://github.com/raspberrypi/firmware.git
+    if [ $? -ne 0 ]; then
+        do_unmount_partitions
+        do_unset_partitions
+        echo "Error: failed to download firmware repository."
+        exit 1
+    fi
 fi
 
 sudo cp -R ${BUILD_DIRECTORY}/firmware/hardfp/opt/* ${CHROOT_DIR}/opt/
