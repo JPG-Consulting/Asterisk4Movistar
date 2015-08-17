@@ -376,7 +376,7 @@ echo "dwc_otg.lpm_enable=0 root=/dev/mmcblk0p2 rootfstype=ext4 rootwait" > ${CHR
 chroot ${CHROOT_DIR} /bin/bash <<EOF
 useradd --home /home/pi --create-home --shell /bin/bash --groups adm,dialout,cdrom,sudo,audio,video,plugdev,games,users --password raspberry pi
 
-DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes install openssh-server locales ntpdate sudo raspi-config
+DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes install openssh-server locales ntpdate sudo
 
 apt-get clean
 EOF
