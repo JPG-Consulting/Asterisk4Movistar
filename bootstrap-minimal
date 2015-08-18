@@ -4,8 +4,7 @@
 
 # Debootstrap params
 #-----------------------------------------------------------
-#MIRROR="http://mirrordirector.raspbian.org/raspbian"
-MIRROR="http://mirrors.fe.up.pt/raspbian/raspbian"
+MIRROR="http://mirrordirector.raspbian.org/raspbian"
 ARCH="armhf"
 RELEASE="wheezy"
 
@@ -272,8 +271,13 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-wget http://archive.raspbian.org/raspbian.public.key -O ${CHROOT_DIR}/raspbian.public.key
-wget http://archive.raspberrypi.org/debian/raspberrypi.gpg.key -O ${CHROOT_DIR}/raspberrypi.gpg.key 
+wget http://mirrordirector.raspbian.org/raspbian.public.key -O ${CHROOT_DIR}/raspbian.public.key
+if [ $? -ne 0 ]; then
+    do_unmount_partitions
+    do_unset_partitions
+    echo "Error: Unable to download raspbian public key."
+    exit 1
+fi
 
 # We are now ready for chroot
 LANG=C chroot ${CHROOT_DIR} /bin/bash <<EOF
@@ -313,7 +317,6 @@ EOF
 
 LANG=C chroot ${CHROOT_DIR} /bin/bash <<EOF
 [ -f /raspbian.public.key ] && apt-key add /raspbian.public.key
-[ -f /raspberrypi.gpg.key ] && apt-key add /raspberrypi.gpg.key
 
 apt-get update
 DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes install locales
@@ -420,7 +423,6 @@ EOF
 umount --force ${CHROOT_DIR}/dev
 
 [ -f ${CHROOT_DIR}/raspbian.public.key ] && rm ${CHROOT_DIR}/raspbian.public.key
-[ -f ${CHROOT_DIR}/raspberrypi.gpg.key ] && rm ${CHROOT_DIR}/raspberrypi.gpg.key
 
 if is_host_arm; then
     rm ${CHROOT_DIR}/usr/bin/qemu-arm-static
