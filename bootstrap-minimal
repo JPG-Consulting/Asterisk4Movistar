@@ -326,7 +326,7 @@ EOF
 # Setup networking
 echo "raspberrypi" > ${CHROOT_DIR}/etc/hostname
 
-echo "127.0.0.1\traspberrypi" >> ${CHROOT_DIR}/etc/hosts
+echo "127.0.0.1	raspberrypi" >> ${CHROOT_DIR}/etc/hosts
 
 cat <<EOF > ${CHROOT_DIR}/etc/network/interfaces
 auto lo
