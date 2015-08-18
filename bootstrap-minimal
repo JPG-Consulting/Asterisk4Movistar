@@ -412,7 +412,7 @@ apt-get clean
 EOF
 
 # Chroot for customization
-chroot ${CHROOT_DIR}
+# chroot ${CHROOT_DIR}
 
 # Post-chroot clenup
 chroot ${CHROOT_DIR} /bin/bash <<EOF
@@ -425,12 +425,14 @@ umount --force ${CHROOT_DIR}/dev
 [ -f ${CHROOT_DIR}/raspbian.public.key ] && rm ${CHROOT_DIR}/raspbian.public.key
 
 if is_host_arm; then
-    rm ${CHROOT_DIR}/usr/bin/qemu-arm-static
-    if [ $? -ne 0 ]; then
-        do_unmount_partitions
-        do_unset_partitions
-        echo "Error: Unable to delete ${CHROOT_DIR}/usr/bin/qemu-arm-static."
-        exit 1
+    if [ -f ${CHROOT_DIR}/usr/bin/qemu-arm-static ]; then
+        rm ${CHROOT_DIR}/usr/bin/qemu-arm-static
+        if [ $? -ne 0 ]; then
+            do_unmount_partitions
+            do_unset_partitions
+            echo "Error: Unable to delete ${CHROOT_DIR}/usr/bin/qemu-arm-static."
+            exit 1
+        fi
     fi
 fi
 
