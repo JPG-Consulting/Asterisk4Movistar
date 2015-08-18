@@ -408,11 +408,23 @@ useradd --home /home/pi --create-home --shell /bin/bash --groups adm,dialout,cdr
 echo -e "raspberry\n$raspberry\n" | sudo passwd pi
 DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes install dropbear ntpdate sudo
 
-sed 's/NO_START=1/NO_START=0/' -i /etc/default/dropbear
-sed -E 's/^%sudo.+/%sudo ALL=(ALL) NOPASSWD: ALL/' -i /etc/sudoers
-
 apt-get clean
 EOF
+
+# Sudo without password
+if [ -f ${CHROOT_DIR}/etc/sudoers ]; then
+    sed -i -E 's/^%sudo.+/%sudo ALL=(ALL) NOPASSWD: ALL/' ${CHROOT_DIR}/etc/sudoers
+fi
+
+# Dropbear configuration
+if [ -f ${CHROOT_DIR}/etc/default/dropbear ]; then
+    sed -i 's/NO_START=1/NO_START=0/g' ${CHROOT_DIR}/etc/default/dropbear
+    sed -i 's/DROPBEAR_EXTRA_ARGS=/DROPBEAR_EXTRA_ARGS="-w"/g' ${CHROOT_DIR}/etc/default/dropbear
+fi
+
+# Remove extra ttys (Save: ~3.5 MB RAM)
+sed -i '/[2-6]:23:respawn:\/sbin\/getty 38400 tty[2-6]/s%^%#%g' ${CHROOT_DIR}/etc/inittab
+sed -i '/T0:23:respawn:\/sbin\/getty -L ttyAMA0 115200 vt100/s%^%#%g' ${CHROOT_DIR}/etc/inittab
 
 # Chroot for customization
 # chroot ${CHROOT_DIR}
