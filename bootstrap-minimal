@@ -275,7 +275,7 @@ wget http://archive.raspbian.org/raspbian.public.key -O ${CHROOT_DIR}/raspbian.p
 wget http://archive.raspberrypi.org/debian/raspberrypi.gpg.key -O ${CHROOT_DIR}/raspberrypi.gpg.key 
 
 # We are now ready for chroot
-chroot ${CHROOT_DIR} /bin/bash <<EOF
+LANG=C chroot ${CHROOT_DIR} /bin/bash <<EOF
 mount -t proc proc /proc
 mount -t sysfs sysfs /sys
 EOF
@@ -293,7 +293,7 @@ EOF
 
 # Proceed with second stage of debootstrap
 echo "Running debootstrap second stage."
-chroot ${CHROOT_DIR} /debootstrap/debootstrap --second-stage
+LANG=C chroot ${CHROOT_DIR} /debootstrap/debootstrap --second-stage
 if [ $? -ne 0 ]; then
     do_unmount_partitions
     do_unset_partitions
@@ -310,7 +310,7 @@ deb ${MIRROR} ${RELEASE} main contrib non-free rpi
 #deb-src ${MIRROR} ${RELEASE} main contrib non-free rpi
 EOF
 
-chroot ${CHROOT_DIR} /bin/bash <<EOF
+LANG=C chroot ${CHROOT_DIR} /bin/bash <<EOF
 [ -f /raspbian.public.key ] && apt-key add /raspbian.public.key
 [ -f /raspberrypi.gpg.key ] && apt-key add /raspberrypi.gpg.key
 
@@ -396,7 +396,7 @@ EOF
 echo "dwc_otg.lpm_enable=0 root=/dev/mmcblk0p2 rootfstype=ext4 rootwait" > ${CHROOT_DIR}/boot/cmdline.txt
 
 # Create the user in the last step
-chroot ${CHROOT_DIR} /bin/bash <<EOF
+LANG=C chroot ${CHROOT_DIR} /bin/bash <<EOF
 useradd --home /home/pi --create-home --shell /bin/bash --groups adm,dialout,cdrom,sudo,audio,video,plugdev,games,users --password raspberry pi
 
 DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes install openssh-server locales ntpdate sudo
@@ -405,10 +405,10 @@ apt-get clean
 EOF
 
 # Chroot for customization
-chroot ${CHROOT_DIR}
+LANG=C chroot ${CHROOT_DIR}
 
 # Post-chroot clenup
-chroot ${CHROOT_DIR} /bin/bash <<EOF
+LANG=C chroot ${CHROOT_DIR} /bin/bash <<EOF
 umount --force /sys
 umount --force /proc
 EOF
