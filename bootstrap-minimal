@@ -325,8 +325,6 @@ dpkg-reconfigure locales
 EOF
 
 # Setup networking
-LANG=C chroot ${CHROOT_DIR} DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes install isc-dhcp-client
-
 echo "raspberrypi" > ${CHROOT_DIR}/etc/hostname
 
 if [ -e ${CHROOT_DIR}/etc/hosts ]; then
@@ -341,6 +339,14 @@ else
 ff02::1		ip6-allnodes
 ff02::2		ip6-allrouters
 EOF
+fi
+
+LANG=C chroot ${CHROOT_DIR} apt-get -y install isc-dhcp-client
+if [ $? -ne 0 ]; then
+    do_unmount_partitions
+    do_unset_partitions
+    echo "Error: Unable to install dhcp client."
+    exit 1
 fi
 
 cat <<EOF > ${CHROOT_DIR}/etc/network/interfaces
@@ -468,6 +474,7 @@ if is_host_arm; then
 fi
 
 # Finally
+echo "Cleaning loop devices."
 do_unmount_partitions
 do_unset_partitions
 
