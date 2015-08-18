@@ -402,11 +402,14 @@ EOF
 echo "dwc_otg.lpm_enable=0 root=/dev/mmcblk0p2 rootfstype=ext4 rootwait" > ${CHROOT_DIR}/boot/cmdline.txt
 
 # Create the user in the last step
+# We install dropbear as a lighter SSH Server
 chroot ${CHROOT_DIR} /bin/bash <<EOF
 useradd --home /home/pi --create-home --shell /bin/bash --groups adm,dialout,cdrom,sudo,audio,video,plugdev,games,users --password raspberry pi
 echo -e "raspberry\n$raspberry\n" | sudo passwd pi
+DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes install dropbear ntpdate sudo
+
+sed 's/NO_START=1/NO_START=0/' -i /etc/default/dropbear
 sed -E 's/^%sudo.+/%sudo ALL=(ALL) NOPASSWD: ALL/' -i /etc/sudoers
-DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes install openssh-server ntpdate sudo
 
 apt-get clean
 EOF
