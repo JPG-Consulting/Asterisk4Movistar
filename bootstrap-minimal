@@ -272,6 +272,7 @@ if [ $? -ne 0 ]; then
 fi
 
 wget http://archive.raspbian.org/raspbian.public.key -O ${CHROOT_DIR}/raspbian.public.key
+wget http://archive.raspberrypi.org/debian/raspberrypi.gpg.key -O ${CHROOT_DIR}/raspberrypi.gpg.key 
 
 # We are now ready for chroot
 chroot ${CHROOT_DIR} /bin/bash <<EOF
@@ -308,7 +309,13 @@ deb ${MIRROR} ${RELEASE} main contrib non-free rpi
 # Uncomment line below then 'apt-get update' to enable 'apt-get source'
 #deb-src ${MIRROR} ${RELEASE} main contrib non-free rpi
 EOF
-chroot ${CHROOT_DIR} apt-get update
+
+chroot ${CHROOT_DIR} /bin/bash <<EOF
+[ -f /raspbian.public.key ] && apt-key add /raspbian.public.key
+[ -f /raspberrypi.gpg.key ] && apt-key add /raspberrypi.gpg.key
+
+apt-get update
+EOF
 
 # Setup networking
 echo "raspberrypi" > ${CHROOT_DIR}/etc/hostname
@@ -409,6 +416,7 @@ EOF
 umount --force ${CHROOT_DIR}/dev
 
 [ -f ${CHROOT_DIR}/raspbian.public.key ] && rm ${CHROOT_DIR}/raspbian.public.key
+[ -f ${CHROOT_DIR}/raspberrypi.gpg.key ] && rm ${CHROOT_DIR}/raspberrypi.gpg.key
 
 if is_host_arm; then
     rm ${CHROOT_DIR}/usr/bin/qemu-arm-static
