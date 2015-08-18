@@ -325,6 +325,8 @@ dpkg-reconfigure locales
 EOF
 
 # Setup networking
+LANG=C chroot ${CHROOT_DIR} DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes install isc-dhcp-client
+
 echo "raspberrypi" > ${CHROOT_DIR}/etc/hostname
 
 if [ -e ${CHROOT_DIR}/etc/hosts ]; then
