@@ -194,6 +194,7 @@ if [ -d ${BUILD_DIRECTORY}/firmware ]; then
     if [ -d ${BUILD_DIRECTORY}/firmware/.git ]; then
         echo "Updating to latest firmware"
         cd ${BUILD_DIRECTORY}/firmware
+        #git stash
         git pull
 	else
 		echo "WARNING: Firmware directory exists but it is not a git repository."
