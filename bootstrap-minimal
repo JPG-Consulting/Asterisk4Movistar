@@ -259,8 +259,6 @@ if is_host_arm; then
 fi
 
 # Before entering chroot we need to mount the following
-mount -t proc proc ${CHROOT_DIR}/proc
-mount -t sysfs sysfs ${CHROOT_DIR}/sys
 mount -o bind /dev ${CHROOT_DIR}/dev
 
 cp -R ${BUILD_DIRECTORY}/firmware/hardfp/opt/* ${CHROOT_DIR}/opt/
@@ -273,16 +271,24 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+wget http://archive.raspbian.org/raspbian.public.key -O ${CHROOT_DIR}/raspbian.public.key
+
 # We are now ready for chroot
-# Setup apt source.
-# debootstrap second-stage will use debian or repository not raspbian if 
-# this is not done before second-stage
-cat <<EOF > ${CHROOT_DIR}/etc/apt/sources.list
-deb ${MIRROR} ${RELEASE} main contrib non-free rpi
-# Uncomment line below then 'apt-get update' to enable 'apt-get source'
-#deb-src ${MIRROR} ${RELEASE} main contrib non-free rpi
+chroot ${CHROOT_DIR} /bin/bash <<EOF
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
 EOF
-chroot ${CHROOT_DIR} apt-get update
+
+# apt is not installed until second-stage :(
+## Setup apt source.
+## debootstrap second-stage will use debian or repository not raspbian if 
+## this is not done before second-stage
+#cat <<EOF > ${CHROOT_DIR}/etc/apt/sources.list
+#deb ${MIRROR} ${RELEASE} main contrib non-free rpi
+## Uncomment line below then 'apt-get update' to enable 'apt-get source'
+##deb-src ${MIRROR} ${RELEASE} main contrib non-free rpi
+#EOF
+#chroot ${CHROOT_DIR} apt-get update
 
 # Proceed with second stage of debootstrap
 echo "Running debootstrap second stage."
@@ -293,6 +299,16 @@ if [ $? -ne 0 ]; then
     echo "Error: debootstrap second-stage failed."
     exit 1
 fi
+
+# Setup apt source.
+# debootstrap second-stage will use debian or repository not raspbian if 
+# this is not done before second-stage
+cat <<EOF > ${CHROOT_DIR}/etc/apt/sources.list
+deb ${MIRROR} ${RELEASE} main contrib non-free rpi
+# Uncomment line below then 'apt-get update' to enable 'apt-get source'
+#deb-src ${MIRROR} ${RELEASE} main contrib non-free rpi
+EOF
+chroot ${CHROOT_DIR} apt-get update
 
 # Setup networking
 echo "raspberrypi" > ${CHROOT_DIR}/etc/hostname
@@ -385,9 +401,14 @@ EOF
 chroot ${CHROOT_DIR}
 
 # Post-chroot clenup
-umount --force ${CHROOT_DIR}/proc
-umount --force ${CHROOT_DIR}/sys
+chroot ${CHROOT_DIR} /bin/bash <<EOF
+umount --force /sys
+umount --force /proc
+EOF
+
 umount --force ${CHROOT_DIR}/dev
+
+[ -f ${CHROOT_DIR}/raspbian.public.key ] && rm ${CHROOT_DIR}/raspbian.public.key
 
 if is_host_arm; then
     rm ${CHROOT_DIR}/usr/bin/qemu-arm-static
