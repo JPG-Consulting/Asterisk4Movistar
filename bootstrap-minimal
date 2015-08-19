@@ -230,8 +230,9 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Format rootfs with ext4 but journaling disabled to achieve the least awful I/O-speed
 echo "Formatting ${ROOT_PARTITION}"
-mkfs.ext4 ${ROOT_PARTITION} >& /dev/null
+mkfs.ext4 -L rootfs -O ^has_journal -E stride=2,stripe-width=1024 -b 4096 ${ROOT_PARTITION} >& /dev/null
 if [ $? -ne 0 ]; then
     echo "Error: Failed to format root partition."
     do_unset_partitions
