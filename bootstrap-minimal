@@ -322,8 +322,8 @@ LANG=C chroot ${CHROOT_DIR} /bin/bash <<EOF
 [ -f /raspbian.public.key ] && apt-key add /raspbian.public.key
 
 apt-get update
-DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes install locales
-dpkg-reconfigure locales
+DEBIAN_FRONTEND=noninteractive apt-get -y --force-yes install locales keyboard-configuration
+
 EOF
 
 # Setup networking
