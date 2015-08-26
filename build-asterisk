@@ -17,7 +17,7 @@ do_make_asterisk()
 {
     echo "Installing prerequisites."
     apt-get -y -qq update
-    apt-get install -y -qq git-core build-essential libsqlite3-dev libxml2-dev libncurses5-dev libncursesw5-dev libiksemel-dev libssl-dev libeditline-dev libedit-dev curl libcurl4-gnutls-dev
+    apt-get install -y -qq git-core build-essential libsqlite3-dev libxml2-dev libncurses5-dev libncursesw5-dev libiksemel-dev libssl-dev libeditline-dev libedit-dev curl libcurl4-gnutls-dev autoconf
     # I will use checkinstall for easier generation
     apt-get install -y -qq checkinstall
 
